@@ -1,0 +1,2237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>LifeLine — Hospital Dashboard</title>
+
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="hospital_dashboard.css" />
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
+
+  <style>
+    /* =========================================================
+       LIFE-LINE HOSPITAL DASHBOARD
+       Professional Emergency Operations UI
+    ========================================================= */
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --red: #C62828;
+      --red-dark: #B71C1C;
+      --red-deep: #8E0000;
+      --red-light: #FFEBEE;
+      --red-mid: #E57373;
+
+      --navy: #0D1B2A;
+      --navy-mid: #162536;
+      --navy-card: #1E3042;
+      --navy-line: #2A3E52;
+
+      --white: #FFFFFF;
+      --off: #F7F8FA;
+      --panel: #FFFFFF;
+
+      --border: #E1E5EA;
+      --text-h: #0D1B2A;
+      --text-b: #374151;
+      --text-m: #6B7280;
+      --text-s: #9CA3AF;
+
+      --green: #16803C;
+      --green-bg: #EAF7EF;
+      --green-border: #A8D8B8;
+
+      --orange: #B45309;
+      --orange-bg: #FFF7E6;
+
+      --blue: #1D4ED8;
+      --blue-bg: #EFF6FF;
+
+      --font:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
+
+      --shadow-sm:
+        0 1px 3px rgba(0, 0, 0, 0.07),
+        0 1px 2px rgba(0, 0, 0, 0.03);
+
+      --shadow-md:
+        0 4px 14px rgba(0, 0, 0, 0.09);
+
+      --shadow-red:
+        0 4px 16px rgba(198, 40, 40, 0.22);
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      font-family: var(--font);
+      background: var(--navy);
+      color: var(--text-b);
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    select {
+      font-family: inherit;
+    }
+
+    /* =========================================================
+       APP SHELL
+    ========================================================= */
+
+    .shell {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+      background: var(--off);
+    }
+
+    /* =========================================================
+       SIDEBAR
+    ========================================================= */
+
+    .sidebar {
+      width: 235px;
+      min-width: 235px;
+      height: 100vh;
+
+      display: flex;
+      flex-direction: column;
+
+      padding: 18px 12px;
+
+      background: var(--navy);
+      border-right: 1px solid var(--navy-line);
+
+      overflow-y: auto;
+    }
+
+    .sidebar::-webkit-scrollbar {
+      width: 0;
+    }
+
+    /* Brand */
+
+    .sb-brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+
+      padding: 4px 7px 19px;
+
+      border-bottom: 1px solid var(--navy-line);
+      margin-bottom: 12px;
+    }
+
+    .sb-logo {
+      width: 40px;
+      height: 40px;
+
+      border-radius: 11px;
+
+      background: var(--red);
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      box-shadow: var(--shadow-red);
+    }
+
+    .sb-logo svg {
+      width: 24px;
+      height: 24px;
+      stroke: #fff;
+    }
+
+    .sb-name {
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+    }
+
+    .sb-sub {
+      margin-top: 2px;
+
+      color: rgba(255,255,255,0.38);
+
+      font-size: 10px;
+      font-weight: 600;
+
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+    }
+
+    /* Navigation */
+
+    .sb-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      flex: 1;
+    }
+
+    .sb-link {
+      width: 100%;
+
+      display: flex;
+      align-items: center;
+      gap: 11px;
+
+      padding: 11px 12px;
+
+      border: 1px solid transparent;
+      border-radius: 9px;
+
+      background: transparent;
+
+      color: rgba(255,255,255,0.55);
+
+      font-size: 13px;
+      font-weight: 600;
+
+      cursor: pointer;
+
+      text-align: left;
+
+      transition:
+        background 0.15s ease,
+        color 0.15s ease,
+        transform 0.12s ease;
+    }
+
+    .sb-link:hover {
+      background: rgba(198,40,40,0.12);
+      color: #fff;
+    }
+
+    .sb-link.active {
+      background: var(--red);
+      color: #fff;
+
+      box-shadow: var(--shadow-red);
+    }
+
+    .sb-link:active {
+      transform: scale(0.98);
+    }
+
+    .sb-icon {
+      width: 19px;
+      height: 19px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      flex-shrink: 0;
+    }
+
+    .sb-icon svg {
+      width: 18px;
+      height: 18px;
+
+      stroke: currentColor;
+      fill: none;
+
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Profile */
+
+    .sb-profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      margin-top: 12px;
+      padding: 10px;
+
+      border-radius: 10px;
+
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--navy-line);
+    }
+
+    .sb-avatar {
+      width: 35px;
+      height: 35px;
+
+      flex-shrink: 0;
+
+      border-radius: 50%;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      background: var(--red);
+
+      color: #fff;
+
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .sb-pname {
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .sb-prole {
+      margin-top: 2px;
+
+      color: rgba(255,255,255,0.40);
+
+      font-size: 10px;
+    }
+
+    /* Logout */
+
+    .sb-logout {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+
+      margin-top: 7px;
+
+      padding: 10px 12px;
+
+      border-radius: 9px;
+
+      border: 1px solid rgba(198,40,40,0.25);
+
+      background: rgba(198,40,40,0.10);
+
+      color: #EF9A9A;
+
+      font-size: 12px;
+      font-weight: 700;
+
+      text-decoration: none;
+
+      transition: 0.15s ease;
+    }
+
+    .sb-logout:hover {
+      background: rgba(198,40,40,0.22);
+      color: #fff;
+    }
+
+    .logout-icon {
+      width: 16px;
+      height: 16px;
+
+      stroke: currentColor;
+
+      fill: none;
+
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* =========================================================
+       MAIN
+    ========================================================= */
+
+    .main {
+      flex: 1;
+      min-width: 0;
+      height: 100vh;
+
+      display: flex;
+      flex-direction: column;
+
+      background: var(--off);
+
+      overflow: hidden;
+    }
+
+    /* =========================================================
+       LIVE BAR
+    ========================================================= */
+
+    .live-bar {
+      min-height: 34px;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      padding: 5px 24px;
+
+      background: var(--navy-mid);
+      border-bottom: 1px solid var(--navy-line);
+
+      flex-shrink: 0;
+    }
+
+    .live-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+
+      border-radius: 50%;
+
+      background: #EF5350;
+
+      box-shadow: 0 0 0 4px rgba(239,83,80,0.10);
+
+      animation: livePulse 1.5s infinite;
+    }
+
+    @keyframes livePulse {
+      0%, 100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.35;
+      }
+    }
+
+    .live-bar span {
+      color: rgba(255,255,255,0.70);
+
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .live-bar small {
+      color: rgba(255,255,255,0.35);
+
+      font-size: 11px;
+    }
+
+    /* =========================================================
+       TOP BAR
+    ========================================================= */
+
+    .topbar {
+      min-height: 68px;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      padding: 12px 24px;
+
+      background: #fff;
+
+      border-bottom: 1px solid var(--border);
+
+      box-shadow: var(--shadow-sm);
+
+      flex-shrink: 0;
+    }
+
+    .topbar-title {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+    }
+
+    .page-icon {
+      width: 38px;
+      height: 38px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 10px;
+
+      background: var(--red-light);
+      color: var(--red);
+    }
+
+    .page-icon svg {
+      width: 21px;
+      height: 21px;
+
+      stroke: currentColor;
+      fill: none;
+
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .topbar h1 {
+      margin: 0;
+
+      color: var(--text-h);
+
+      font-size: 20px;
+      font-weight: 800;
+
+      letter-spacing: -0.35px;
+    }
+
+    .topbar-subtitle {
+      margin-top: 2px;
+
+      color: var(--text-s);
+
+      font-size: 11px;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    /* Search */
+
+    .search {
+      height: 36px;
+
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      padding: 0 11px;
+
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+
+      background: var(--off);
+
+      transition: border 0.15s ease;
+    }
+
+    .search:focus-within {
+      border-color: var(--red);
+      background: #fff;
+    }
+
+    .search-icon {
+      width: 16px;
+      height: 16px;
+
+      stroke: var(--text-s);
+
+      fill: none;
+
+      stroke-width: 2;
+
+      stroke-linecap: round;
+    }
+
+    .search input {
+      width: 165px;
+
+      border: none;
+      outline: none;
+
+      background: transparent;
+
+      color: var(--text-b);
+
+      font-size: 12px;
+    }
+
+    .search input::placeholder {
+      color: var(--text-s);
+    }
+
+    /* Admin */
+
+    .admin-chip {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+
+      color: var(--text-m);
+
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .admin-avatar {
+      width: 34px;
+      height: 34px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 50%;
+
+      background: var(--red);
+
+      color: #fff;
+
+      font-size: 12px;
+      font-weight: 800;
+
+      box-shadow: 0 2px 8px rgba(198,40,40,0.20);
+    }
+
+    /* =========================================================
+       SCROLL AREA
+    ========================================================= */
+
+    .scroll {
+      flex: 1;
+
+      overflow-y: auto;
+
+      padding: 20px 24px 30px;
+    }
+
+    .scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .scroll::-webkit-scrollbar-thumb {
+      background: #D5D9DE;
+      border-radius: 5px;
+    }
+
+    /* =========================================================
+       KPI
+    ========================================================= */
+
+    .kpi-grid {
+      display: grid;
+
+      grid-template-columns: repeat(4, 1fr);
+
+      gap: 14px;
+
+      margin-bottom: 18px;
+    }
+
+    .kpi {
+      min-height: 92px;
+
+      display: flex;
+      align-items: center;
+
+      gap: 13px;
+
+      padding: 15px 17px;
+
+      background: #fff;
+
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--red);
+
+      border-radius: 12px;
+
+      box-shadow: var(--shadow-sm);
+
+      transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
+    }
+
+    .kpi:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .kpi.k1 {
+      border-left-color: var(--navy);
+    }
+
+    .kpi.k2 {
+      border-left-color: var(--green);
+    }
+
+    .kpi.k3 {
+      border-left-color: var(--orange);
+    }
+
+    .kpi.k4 {
+      border-left-color: var(--red);
+    }
+
+    .kpi-ico {
+      width: 43px;
+      height: 43px;
+
+      flex-shrink: 0;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 10px;
+
+      background: var(--off);
+
+      color: var(--red);
+    }
+
+    .kpi.k1 .kpi-ico {
+      color: var(--navy);
+    }
+
+    .kpi.k2 .kpi-ico {
+      color: var(--green);
+      background: var(--green-bg);
+    }
+
+    .kpi.k3 .kpi-ico {
+      color: var(--orange);
+      background: var(--orange-bg);
+    }
+
+    .kpi.k4 .kpi-ico {
+      color: var(--red);
+      background: var(--red-light);
+    }
+
+    .kpi-ico svg {
+      width: 22px;
+      height: 22px;
+
+      stroke: currentColor;
+
+      fill: none;
+
+      stroke-width: 1.8;
+
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .kpi-lbl {
+      color: var(--text-s);
+
+      font-size: 10px;
+      font-weight: 700;
+
+      text-transform: uppercase;
+
+      letter-spacing: 0.5px;
+    }
+
+    .kpi-val {
+      margin-top: 2px;
+
+      color: var(--text-h);
+
+      font-size: 25px;
+      font-weight: 900;
+
+      letter-spacing: -0.5px;
+    }
+
+    /* =========================================================
+       TWO COLUMN
+    ========================================================= */
+
+    .grid2 {
+      display: grid;
+
+      grid-template-columns: 1fr 1fr;
+
+      gap: 14px;
+
+      margin-bottom: 18px;
+    }
+
+    /* =========================================================
+       PANEL
+    ========================================================= */
+
+    .panel {
+      padding: 16px 18px;
+
+      background: #fff;
+
+      border: 1px solid var(--border);
+
+      border-radius: 13px;
+
+      box-shadow: var(--shadow-sm);
+    }
+
+    .panel-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      gap: 10px;
+
+      margin-bottom: 14px;
+    }
+
+    .panel-hdr h3 {
+      margin: 0;
+
+      color: var(--text-h);
+
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .panel-subtitle {
+      color: var(--text-s);
+      font-size: 10px;
+    }
+
+    /* =========================================================
+       LEGEND
+    ========================================================= */
+
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .legend span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+
+      color: var(--text-m);
+
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .ldot {
+      width: 8px;
+      height: 8px;
+
+      border-radius: 50%;
+    }
+
+    .ldot.ok {
+      background: var(--green);
+    }
+
+    .ldot.busy {
+      background: var(--red);
+    }
+
+    .ldot.hosp {
+      background: var(--blue);
+    }
+
+    /* =========================================================
+       MAP
+    ========================================================= */
+
+    #map {
+      width: 100%;
+      height: 260px;
+
+      overflow: hidden;
+
+      border: 1px solid var(--border);
+
+      border-radius: 9px;
+    }
+
+    /* =========================================================
+       ALERTS
+    ========================================================= */
+
+    .alerts-panel {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .alerts-list {
+      min-height: 180px;
+      max-height: 240px;
+
+      display: flex;
+      flex-direction: column;
+
+      gap: 7px;
+
+      overflow-y: auto;
+    }
+
+    .alerts-list::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .alerts-list::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    .alert-row {
+      display: flex;
+      align-items: flex-start;
+
+      gap: 10px;
+
+      padding: 10px 11px;
+
+      background: var(--off);
+
+      border: 1px solid var(--border);
+
+      border-radius: 9px;
+
+      transition: border-color 0.15s ease;
+    }
+
+    .alert-row:hover {
+      border-color: var(--red-mid);
+    }
+
+    .alert-ico {
+      width: 28px;
+      height: 28px;
+
+      flex-shrink: 0;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 8px;
+
+      background: var(--red-light);
+
+      color: var(--red);
+    }
+
+    .alert-ico svg {
+      width: 15px;
+      height: 15px;
+
+      stroke: currentColor;
+
+      fill: none;
+
+      stroke-width: 2;
+
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .alert-title {
+      color: var(--text-b);
+
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .alert-time {
+      margin-top: 2px;
+
+      color: var(--text-s);
+
+      font-size: 10px;
+    }
+
+    .view-all {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+
+      margin-top: 10px;
+
+      padding: 9px;
+
+      background: var(--red-light);
+
+      border: 1px solid var(--red-mid);
+
+      border-radius: 8px;
+
+      color: var(--red);
+
+      font-size: 11px;
+      font-weight: 700;
+
+      text-decoration: none;
+
+      transition: 0.15s ease;
+    }
+
+    .view-all:hover {
+      background: #FFCDD2;
+    }
+
+    /* =========================================================
+       TREND CHART
+    ========================================================= */
+
+    .trend-chart {
+      width: 100%;
+      height: 200px;
+
+      display: block;
+    }
+
+    /* =========================================================
+       SELECT
+    ========================================================= */
+
+    .panel-hdr select {
+      padding: 6px 9px;
+
+      background: var(--off);
+
+      border: 1px solid var(--border);
+
+      border-radius: 7px;
+
+      color: var(--text-m);
+
+      font-size: 11px;
+
+      outline: none;
+
+      cursor: pointer;
+    }
+
+    .panel-hdr select:focus {
+      border-color: var(--red);
+    }
+
+    /* =========================================================
+       DONUT
+    ========================================================= */
+
+    .donut-wrap {
+      height: 200px;
+
+      display: flex;
+      align-items: center;
+
+      gap: 22px;
+    }
+
+    #status-chart {
+      width: 130px;
+      height: 130px;
+
+      flex-shrink: 0;
+    }
+
+    .donut-legend {
+      flex: 1;
+
+      display: flex;
+      flex-direction: column;
+
+      gap: 13px;
+    }
+
+    .dl-row {
+      display: flex;
+      align-items: center;
+
+      gap: 8px;
+
+      color: var(--text-m);
+
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .dl-dot {
+      width: 9px;
+      height: 9px;
+
+      flex-shrink: 0;
+
+      border-radius: 50%;
+    }
+
+    .dl-dot.ok {
+      background: var(--green);
+    }
+
+    .dl-dot.busy {
+      background: var(--red);
+    }
+
+    .dl-dot.idle {
+      background: var(--orange);
+    }
+
+    .dl-pct {
+      margin-left: auto;
+
+      color: var(--text-h);
+
+      font-weight: 800;
+    }
+
+    /* =========================================================
+       TABLE
+    ========================================================= */
+
+    .table-panel {
+      margin-bottom: 0;
+    }
+
+    .tbl-wrap {
+      overflow-x: auto;
+
+      border: 1px solid var(--border);
+
+      border-radius: 9px;
+    }
+
+    table {
+      width: 100%;
+
+      border-collapse: collapse;
+
+      font-size: 12px;
+    }
+
+    thead {
+      background: var(--off);
+
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      padding: 11px 13px;
+
+      text-align: left;
+
+      color: var(--text-m);
+
+      font-size: 10px;
+      font-weight: 700;
+
+      text-transform: uppercase;
+
+      letter-spacing: 0.45px;
+
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+
+      transition: background 0.12s ease;
+    }
+
+    tbody tr:hover {
+      background: var(--red-light);
+    }
+
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    td {
+      padding: 12px 13px;
+
+      color: var(--text-b);
+
+      white-space: nowrap;
+    }
+
+    .empty {
+      padding: 36px 14px !important;
+
+      text-align: center;
+
+      color: var(--text-s);
+    }
+
+    /* =========================================================
+       STATUS BADGES
+    ========================================================= */
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+
+      padding: 4px 9px;
+
+      border-radius: 20px;
+
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .badge.ok {
+      color: var(--green);
+
+      background: var(--green-bg);
+
+      border: 1px solid var(--green-border);
+    }
+
+    .badge.busy {
+      color: var(--red);
+
+      background: var(--red-light);
+
+      border: 1px solid var(--red-mid);
+    }
+
+    .badge.idle {
+      color: var(--orange);
+
+      background: var(--orange-bg);
+
+      border: 1px solid #FCD34D;
+    }
+
+    /* =========================================================
+       ADD UNIT
+    ========================================================= */
+
+    .btn-add {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      padding: 7px 11px;
+
+      background: var(--off);
+
+      border: 1px solid var(--border);
+
+      border-radius: 7px;
+
+      color: var(--text-m);
+
+      font-size: 11px;
+      font-weight: 700;
+
+      cursor: pointer;
+
+      transition: 0.15s ease;
+    }
+
+    .btn-add:hover {
+      border-color: var(--red);
+      color: var(--red);
+      background: var(--red-light);
+    }
+
+    .btn-add svg {
+      width: 14px;
+      height: 14px;
+
+      stroke: currentColor;
+
+      fill: none;
+
+      stroke-width: 2;
+
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* =========================================================
+       RESPONSIVE
+    ========================================================= */
+
+    @media (max-width: 1200px) {
+
+      .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+    }
+
+    @media (max-width: 900px) {
+
+      .sidebar {
+        display: none;
+      }
+
+      .grid2 {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        padding: 12px 16px;
+      }
+
+      .scroll {
+        padding: 16px;
+      }
+
+    }
+
+    @media (max-width: 600px) {
+
+      .kpi-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar-subtitle {
+        display: none;
+      }
+
+      .search {
+        display: none;
+      }
+
+      .topbar h1 {
+        font-size: 16px;
+      }
+
+      .live-bar {
+        padding: 5px 14px;
+      }
+
+      .scroll {
+        padding: 14px;
+      }
+
+      .legend {
+        display: none;
+      }
+
+      .donut-wrap {
+        gap: 10px;
+      }
+
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="shell">
+
+  <!-- =======================================================
+       SIDEBAR
+  ======================================================== -->
+
+  <aside class="sidebar">
+
+    <!-- BRAND -->
+
+    <div class="sb-brand">
+
+      <div class="sb-logo">
+
+        <!-- Medical cross / LifeLine -->
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 3v18M3 12h18"
+            stroke-width="3"
+            stroke-linecap="round"
+          />
+        </svg>
+
+      </div>
+
+      <div>
+        <div class="sb-name">LifeLine</div>
+        <div class="sb-sub">Hospital Operations</div>
+      </div>
+
+    </div>
+
+
+    <!-- NAVIGATION -->
+
+    <nav class="sb-nav">
+
+      <button class="sb-link active">
+
+        <span class="sb-icon">
+          <!-- Dashboard -->
+          <svg viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </span>
+
+        Dashboard
+
+      </button>
+
+
+      <button class="sb-link">
+
+        <span class="sb-icon">
+          <!-- Ambulance -->
+          <svg viewBox="0 0 24 24">
+            <path d="M3 17V9h11l4 4h3v4"/>
+            <path d="M14 9v4h4"/>
+            <path d="M6 17h9"/>
+            <circle cx="7" cy="17" r="2"/>
+            <circle cx="17" cy="17" r="2"/>
+            <path d="M6 12h5"/>
+            <path d="M8.5 9v6"/>
+          </svg>
+        </span>
+
+        Ambulances
+
+      </button>
+
+
+      <button class="sb-link">
+
+        <span class="sb-icon">
+          <!-- Hospital -->
+          <svg viewBox="0 0 24 24">
+            <path d="M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16"/>
+            <path d="M9 21v-4h6v4"/>
+            <path d="M12 6v6"/>
+            <path d="M9 9h6"/>
+            <path d="M8 14h1"/>
+            <path d="M15 14h1"/>
+          </svg>
+        </span>
+
+        Hospitals
+
+      </button>
+
+
+      <button class="sb-link">
+
+        <span class="sb-icon">
+          <!-- Alert -->
+          <svg viewBox="0 0 24 24">
+            <path d="M10.3 4.3 2.9 17a2 2 0 0 0 1.7 3h14.8a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"/>
+            <path d="M12 9v4"/>
+            <path d="M12 17h.01"/>
+          </svg>
+        </span>
+
+        Alerts
+
+      </button>
+
+
+      <button class="sb-link">
+
+        <span class="sb-icon">
+          <!-- Settings -->
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.5 1.5-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V20h-2v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1-1.5-1.5.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H6v-2h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 1.5-1.5.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5V6h2v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1 1.5 1.5-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.2v2h-.2a1.7 1.7 0 0 0-1.5 1Z"/>
+          </svg>
+        </span>
+
+        Settings
+
+      </button>
+
+    </nav>
+
+
+    <!-- PROFILE -->
+
+    <div class="sb-profile">
+
+      <div class="sb-avatar" id="sb-initial">
+        A
+      </div>
+
+      <div>
+
+        <div class="sb-pname" id="sb-admin-name">
+          Admin
+        </div>
+
+        <div class="sb-prole" id="sb-hospital-name">
+          City Hospital
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- LOGOUT -->
+
+    <a href="/login" class="sb-logout">
+
+      <svg
+        class="logout-icon"
+        viewBox="0 0 24 24"
+      >
+        <path d="M10 17l5-5-5-5"/>
+        <path d="M15 12H3"/>
+        <path d="M21 3v18"/>
+      </svg>
+
+      Logout
+
+    </a>
+
+  </aside>
+
+
+  <!-- =======================================================
+       MAIN
+  ======================================================== -->
+
+  <main class="main">
+
+
+    <!-- LIVE BAR -->
+
+    <div class="live-bar">
+
+      <div class="live-bar-left">
+
+        <div class="live-dot"></div>
+
+        <span>
+          Emergency Operations Live
+        </span>
+
+      </div>
+
+
+      <div style="display:flex;align-items:center;gap:16px">
+
+        <span id="cd-label">
+          Next refresh in 2:00
+        </span>
+
+        <small id="last-updated"></small>
+
+      </div>
+
+    </div>
+
+
+    <!-- TOP BAR -->
+
+    <header class="topbar">
+
+      <div class="topbar-title">
+
+        <div class="page-icon">
+
+          <!-- Hospital icon -->
+
+          <svg viewBox="0 0 24 24">
+
+            <path d="M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16"/>
+
+            <path d="M9 21v-4h6v4"/>
+
+            <path d="M12 6v6"/>
+
+            <path d="M9 9h6"/>
+
+          </svg>
+
+        </div>
+
+        <div>
+
+          <h1>
+            Hospital Dashboard
+          </h1>
+
+          <div class="topbar-subtitle">
+            Ambulance dispatch and emergency response monitoring
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="topbar-right">
+
+
+        <!-- SEARCH -->
+
+        <div class="search">
+
+          <svg
+            class="search-icon"
+            viewBox="0 0 24 24"
+          >
+            <circle cx="11" cy="11" r="7"/>
+            <path d="m20 20-4-4"/>
+          </svg>
+
+          <input
+            type="text"
+            placeholder="Search ambulance..."
+          />
+
+        </div>
+
+
+        <!-- ADMIN -->
+
+        <div class="admin-chip">
+
+          <span id="welcome-text">
+            Welcome, Admin
+          </span>
+
+          <div
+            class="admin-avatar"
+            id="top-initial"
+          >
+            A
+          </div>
+
+        </div>
+
+      </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         SCROLL AREA
+    ====================================================== -->
+
+    <div class="scroll">
+
+
+      <!-- ===================================================
+           KPI CARDS
+      ==================================================== -->
+
+      <div class="kpi-grid">
+
+
+        <!-- TOTAL AMBULANCES -->
+
+        <div class="kpi k1">
+
+          <div class="kpi-ico">
+
+            <svg viewBox="0 0 24 24">
+
+              <path d="M3 17V9h11l4 4h3v4"/>
+
+              <path d="M14 9v4h4"/>
+
+              <circle cx="7" cy="17" r="2"/>
+
+              <circle cx="17" cy="17" r="2"/>
+
+            </svg>
+
+          </div>
+
+          <div>
+
+            <div class="kpi-lbl">
+              Total Ambulances
+            </div>
+
+            <div
+              class="kpi-val"
+              id="total-ambulances"
+            >
+              —
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- ACTIVE -->
+
+        <div class="kpi k2">
+
+          <div class="kpi-ico">
+
+            <svg viewBox="0 0 24 24">
+
+              <path d="M12 21a9 9 0 1 0-9-9"/>
+
+              <path d="M3 12h5"/>
+
+              <path d="m3 12 3-3"/>
+
+              <path d="m3 12 3 3"/>
+
+            </svg>
+
+          </div>
+
+          <div>
+
+            <div class="kpi-lbl">
+              Active / En Route
+            </div>
+
+            <div
+              class="kpi-val"
+              id="active-ambulances"
+            >
+              —
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- RESPONSE -->
+
+        <div class="kpi k3">
+
+          <div class="kpi-ico">
+
+            <svg viewBox="0 0 24 24">
+
+              <circle cx="12" cy="12" r="8"/>
+
+              <path d="M12 7v5l3 2"/>
+
+            </svg>
+
+          </div>
+
+          <div>
+
+            <div class="kpi-lbl">
+              Avg Response
+            </div>
+
+            <div
+              class="kpi-val"
+              id="response-time"
+            >
+              —
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- EMERGENCY -->
+
+        <div class="kpi k4">
+
+          <div class="kpi-ico">
+
+            <svg viewBox="0 0 24 24">
+
+              <path d="M10.3 4.3 2.9 17a2 2 0 0 0 1.7 3h14.8a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"/>
+
+              <path d="M12 9v4"/>
+
+              <path d="M12 17h.01"/>
+
+            </svg>
+
+          </div>
+
+          <div>
+
+            <div class="kpi-lbl">
+              Emergency Requests
+            </div>
+
+            <div
+              class="kpi-val"
+              id="emergency-requests"
+            >
+              —
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- ===================================================
+           MAP + ALERTS
+      ==================================================== -->
+
+      <div class="grid2">
+
+
+        <!-- MAP -->
+
+        <div class="panel">
+
+          <div class="panel-hdr">
+
+            <h3>
+              Real-Time Ambulance Tracking
+            </h3>
+
+            <div class="legend">
+
+              <span>
+                <div class="ldot ok"></div>
+                Available
+              </span>
+
+              <span>
+                <div class="ldot busy"></div>
+                En Route
+              </span>
+
+              <span>
+                <div class="ldot hosp"></div>
+                Hospital
+              </span>
+
+            </div>
+
+          </div>
+
+          <div id="map"></div>
+
+        </div>
+
+
+        <!-- ALERTS -->
+
+        <div class="panel alerts-panel">
+
+          <div class="panel-hdr">
+
+            <h3>
+              Live Alerts
+            </h3>
+
+            <span class="panel-subtitle">
+              Real-time
+            </span>
+
+          </div>
+
+
+          <div
+            class="alerts-list"
+            id="alerts-list"
+          >
+
+            <div class="alert-row">
+
+              <span class="alert-ico">
+
+                <svg viewBox="0 0 24 24">
+
+                  <path d="M10.3 4.3 2.9 17a2 2 0 0 0 1.7 3h14.8a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"/>
+
+                  <path d="M12 9v4"/>
+
+                  <path d="M12 17h.01"/>
+
+                </svg>
+
+              </span>
+
+              <div>
+
+                <div class="alert-title">
+                  Loading alerts...
+                </div>
+
+                <div class="alert-time">
+                  Updating emergency operations
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <a
+            href="#"
+            class="view-all"
+          >
+
+            View All Alerts
+
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <path d="M5 12h14"/>
+              <path d="m13 6 6 6-6 6"/>
+            </svg>
+
+          </a>
+
+        </div>
+
+      </div>
+
+
+      <!-- ===================================================
+           TREND + FLEET STATUS
+      ==================================================== -->
+
+      <div class="grid2">
+
+
+        <!-- TREND -->
+
+        <div class="panel">
+
+          <div class="panel-hdr">
+
+            <h3>
+              Emergency Requests Trend
+            </h3>
+
+            <select id="trend-filter">
+
+              <option>
+                Last 7 Days
+              </option>
+
+              <option>
+                Last 24 Hours
+              </option>
+
+              <option>
+                Last Hour
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <svg
+            id="trend-chart"
+            class="trend-chart"
+            viewBox="0 0 560 200"
+            preserveAspectRatio="xMidYMid meet"
+          ></svg>
+
+        </div>
+
+
+        <!-- FLEET STATUS -->
+
+        <div class="panel">
+
+          <div class="panel-hdr">
+
+            <h3>
+              Fleet Status
+            </h3>
+
+            <span class="panel-subtitle">
+              Current status
+            </span>
+
+          </div>
+
+
+          <div class="donut-wrap">
+
+            <svg
+              id="status-chart"
+              viewBox="0 0 200 200"
+            ></svg>
+
+
+            <div
+              class="donut-legend"
+              id="status-legend"
+            >
+
+              <div class="dl-row">
+
+                <div class="dl-dot ok"></div>
+
+                Available
+
+                <span
+                  class="dl-pct"
+                  id="pct-available"
+                >
+                  —
+                </span>
+
+              </div>
+
+
+              <div class="dl-row">
+
+                <div class="dl-dot busy"></div>
+
+                En Route
+
+                <span
+                  class="dl-pct"
+                  id="pct-busy"
+                >
+                  —
+                </span>
+
+              </div>
+
+
+              <div class="dl-row">
+
+                <div class="dl-dot idle"></div>
+
+                Maintenance
+
+                <span
+                  class="dl-pct"
+                  id="pct-idle"
+                >
+                  —
+                </span>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- ===================================================
+           AMBULANCE MANAGEMENT
+      ==================================================== -->
+
+      <div class="panel table-panel">
+
+        <div class="panel-hdr">
+
+          <div>
+
+            <h3>
+              Ambulance Management
+            </h3>
+
+            <div class="panel-subtitle">
+              Monitor assigned and available emergency units
+            </div>
+
+          </div>
+
+
+          <button class="btn-add">
+
+            <svg viewBox="0 0 24 24">
+
+              <path d="M12 5v14"/>
+
+              <path d="M5 12h14"/>
+
+            </svg>
+
+            Add Unit
+
+          </button>
+
+        </div>
+
+
+        <div class="tbl-wrap">
+
+          <table>
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Ambulance ID
+                </th>
+
+                <th>
+                  Driver
+                </th>
+
+                <th>
+                  Vehicle Type
+                </th>
+
+                <th>
+                  Status
+                </th>
+
+                <th>
+                  Location
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody id="ambulance-table">
+
+              <tr>
+
+                <td
+                  colspan="5"
+                  class="empty"
+                >
+                  Loading ambulance data...
+
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
+
+    </div>
+
+  </main>
+
+</div>
+
+
+<!-- =========================================================
+     SCRIPTS
+========================================================= -->
+
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  crossorigin=""
+></script>
+
+<script src="hospital_dashboard.js"></script>
+
+
+<!-- =========================================================
+     SESSION PROFILE
+========================================================= -->
+
+<script>
+
+(function () {
+
+  try {
+
+    const user = JSON.parse(
+      sessionStorage.getItem("user") || "{}"
+    );
+
+    const name =
+      user.admin_name ||
+      user.full_name ||
+      "Admin";
+
+    const hosp =
+      user.hospital_name ||
+      "Hospital";
+
+    const init =
+      name.charAt(0).toUpperCase();
+
+    const sbName =
+      document.getElementById("sb-admin-name");
+
+    const sbHospital =
+      document.getElementById("sb-hospital-name");
+
+    const sbInitial =
+      document.getElementById("sb-initial");
+
+    const topInitial =
+      document.getElementById("top-initial");
+
+    const welcome =
+      document.getElementById("welcome-text");
+
+
+    if (sbName) {
+      sbName.textContent = name;
+    }
+
+    if (sbHospital) {
+      sbHospital.textContent = hosp;
+    }
+
+    if (sbInitial) {
+      sbInitial.textContent = init;
+    }
+
+    if (topInitial) {
+      topInitial.textContent = init;
+    }
+
+    if (welcome) {
+      welcome.textContent =
+        "Welcome, " +
+        name.split(" ")[0];
+    }
+
+  } catch (error) {
+
+    console.warn(
+      "Unable to load hospital profile",
+      error
+    );
+
+  }
+
+})();
+
+</script>
+
+</body>
+</html>

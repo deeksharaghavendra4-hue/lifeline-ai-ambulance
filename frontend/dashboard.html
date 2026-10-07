@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ambulance AI — Dashboard</title>
+  <link rel="stylesheet" href="unocss.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@unocss/runtime"></script>
+</head>
+<body class="min-h-screen bg-gray-950 text-gray-100 px-6 py-8" style="background:#071326;color:#e6eef6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-8">
+    <div class="flex items-center gap-3">
+      <span class="text-3xl">🚑</span>
+      <div>
+        <h1 class="text-2xl font-bold text-red-400">Ambulance AI</h1>
+        <p class="text-gray-500 text-sm">Admin Dashboard — Auto-refreshes every 5s</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <a href="/" class="text-sm text-gray-400 hover:text-white underline">Home</a>
+      <a href="/login" class="text-sm text-gray-400 hover:text-white underline">Login</a>
+    </div>
+  </div>
+
+  <!-- Ambulances Table -->
+  <section class="mb-10">
+    <h2 class="text-lg font-semibold text-white mb-4">🚐 Ambulances</h2>
+    <div class="overflow-x-auto rounded-xl bg-gray-900 shadow">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-gray-400 border-b border-gray-700 text-left">
+            <th class="py-3 px-4">ID</th>
+            <th class="py-3 px-4">Driver</th>
+            <th class="py-3 px-4">Location</th>
+            <th class="py-3 px-4">Status</th>
+          </tr>
+        </thead>
+        <tbody id="ambulance-tbody">
+          <tr><td colspan="4" class="py-4 px-4 text-gray-500">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Requests Table -->
+  <section>
+    <h2 class="text-lg font-semibold text-white mb-4">📋 All Requests</h2>
+    <div class="overflow-x-auto rounded-xl bg-gray-900 shadow">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-gray-400 border-b border-gray-700 text-left">
+            <th class="py-3 px-4">Request ID</th>
+            <th class="py-3 px-4">Patient</th>
+            <th class="py-3 px-4">Ambulance</th>
+            <th class="py-3 px-4">Hospital</th>
+            <th class="py-3 px-4">Status</th>
+            <th class="py-3 px-4">Timestamp</th>
+          </tr>
+        </thead>
+        <tbody id="request-tbody">
+          <tr><td colspan="6" class="py-4 px-4 text-gray-500">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,223 @@
+/* ============================================================
+   LIFELINE EMERGENCY — SHARED DESIGN TOKENS
+   Unified Theme: Emergency Red + White + Deep Navy
+   ============================================================ */
+
+:root {
+  /* ── PRIMARY: EMERGENCY RED ── */
+  --red:        #C62828;
+  --red-dark:   #B71C1C;
+  --red-deep:   #8E0000;
+  --red-light:  #FFEBEE;
+  --red-mid:    #E57373;
+
+  /* ── SECONDARY: DEEP NAVY ── */
+  --navy:       #0D1B2A;
+  --navy-mid:   #162536;
+  --navy-card:  #1E3042;
+  --navy-line:  #2A3E52;
+  --navy-muted: #718096;
+
+  /* ── WHITE / LIGHT BACKGROUNDS ── */
+  --white:      #FFFFFF;
+  --off-white:  #F8F9FA;
+  --gray-50:    #F5F6F8;
+  --gray-100:   #ECEEF1;
+  --gray-200:   #D5D9DE;
+  --gray-400:   #9AA1AA;
+  --gray-600:   #4B5563;
+  --gray-800:   #1F2937;
+  --black:      #111827;
+
+  /* ── STATUS COLORS ── */
+  --success:    #16803C;
+  --success-bg: #EAF7EF;
+  --success-bdr:#A8D8B8;
+
+  --warn:       #B45309;
+  --warn-bg:    #FFF7E6;
+
+  --info:       #1D4ED8;
+  --info-bg:    #EFF6FF;
+
+  /* ── TYPOGRAPHY ── */
+  --font:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+
+  /* ── SHADOWS ── */
+  --shadow-sm:
+    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+
+  --shadow-md:
+    0 4px 12px rgba(0, 0, 0, 0.10),
+    0 2px 6px rgba(0, 0, 0, 0.05);
+
+  --shadow-red:
+    0 4px 16px rgba(198, 40, 40, 0.22);
+
+  --shadow-nav:
+    0 -1px 0 rgba(0, 0, 0, 0.06),
+    0 -4px 16px rgba(0, 0, 0, 0.06);
+
+  /* ── BORDER RADIUS ── */
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   16px;
+  --r-xl:   20px;
+  --r-pill: 999px;
+}
+
+
+/* ============================================================
+   GLOBAL BASE
+   ============================================================ */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font);
+  background: var(--off-white);
+  color: var(--gray-800);
+}
+
+
+/* ============================================================
+   COMMON TEXT
+   ============================================================ */
+
+.text-primary {
+  color: var(--red);
+}
+
+.text-dark {
+  color: var(--navy);
+}
+
+.text-muted {
+  color: var(--gray-600);
+}
+
+
+/* ============================================================
+   COMMON BUTTONS
+   ============================================================ */
+
+.btn-primary {
+  background: var(--red);
+  color: var(--white);
+  border: 1px solid var(--red);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-red);
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: var(--red-dark);
+  border-color: var(--red-dark);
+}
+
+.btn-primary:active {
+  background: var(--red-deep);
+}
+
+
+/* ============================================================
+   COMMON CARDS
+   ============================================================ */
+
+.card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+
+/* ============================================================
+   COMMON INPUTS
+   ============================================================ */
+
+input,
+select,
+textarea {
+  font-family: var(--font);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-sm);
+  background: var(--white);
+  color: var(--gray-800);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px var(--red-light);
+}
+
+
+/* ============================================================
+   COMMON LINKS
+   ============================================================ */
+
+a {
+  color: var(--red);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--red-dark);
+}
+
+
+/* ============================================================
+   COMMON STATUS
+   ============================================================ */
+
+.status-success {
+  color: var(--success);
+  background: var(--success-bg);
+  border-color: var(--success-bdr);
+}
+
+.status-warning {
+  color: var(--warn);
+  background: var(--warn-bg);
+}
+
+.status-info {
+  color: var(--info);
+  background: var(--info-bg);
+}
+
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--gray-50);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-200);
+  border-radius: var(--r-pill);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--red-mid);
+}

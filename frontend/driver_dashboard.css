@@ -1,0 +1,1981 @@
+/* =========================================================
+   LIFELINE - DRIVER DASHBOARD
+   Updated:
+   - Always selects newest pending request
+   - Never assigns a random ambulance
+   - Preserves active trips
+   - Polls for new requests
+   - Keeps Accept / Reject workflow
+   ========================================================= */
+
+const POLL_MS = 10000;
+
+let ambulanceId = null;
+let driverUser = null;
+let pollTimer = null;
+
+let map = null;
+let driverMarker = null;
+let patientMarker = null;
+let hospitalMarker = null;
+
+let routeLineToPatient = null;
+let routeLineToHospital = null;
+
+let currentRequest = null;
+let pendingRequest = null;
+
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+
+function getElement(id) {
+    return document.getElementById(id);
+}
+
+
+function showMessage(message, type = "info") {
+    console.log(`[${type}] ${message}`);
+
+    const possibleIds = [
+        "driverMessage",
+        "message",
+        "statusMessage",
+        "toast"
+    ];
+
+    for (const id of possibleIds) {
+        const el = getElement(id);
+
+        if (el) {
+            el.textContent = message;
+            el.className = `message ${type}`;
+            return;
+        }
+    }
+}
+
+
+function normalizeStatus(status) {
+    return String(status || "")
+        .trim()
+        .toLowerCase();
+}
+
+
+function isActiveTrip(status) {
+    const s = normalizeStatus(status);
+
+    return [
+        "accepted",
+        "en_route",
+        "enroute",
+        "picked_up"
+    ].includes(s);
+}
+
+
+function getRequestTime(request) {
+    return new Date(
+        request?.timestamp ||
+        request?.created_at ||
+        request?.requested_at ||
+        0
+    ).getTime();
+}
+
+
+/* =========================================================
+   NEWEST PENDING REQUEST
+   ========================================================= */
+
+function getNewestPendingRequest(requests) {
+
+    if (!Array.isArray(requests) || requests.length === 0) {
+        return null;
+    }
+
+    const validPending = requests.filter(request => {
+        return normalizeStatus(request.status) === "pending";
+    });
+
+    if (!validPending.length) {
+        return null;
+    }
+
+    validPending.sort((a, b) => {
+        return getRequestTime(b) - getRequestTime(a);
+    });
+
+    return validPending[0];
+}
+
+
+/* =========================================================
+   AUTHENTICATION
+   ========================================================= */
+
+function loadDriverUser() {
+
+    let user = null;
+
+    try {
+        const sessionUser =
+            sessionStorage.getItem("user");
+
+        const localUser =
+            localStorage.getItem("driver_data");
+
+        if (sessionUser) {
+            user = JSON.parse(sessionUser);
+        } else if (localUser) {
+            user = JSON.parse(localUser);
+        }
+    } catch (error) {
+        console.error(
+            "Unable to read driver user:",
+            error
+        );
+    }
+
+    const sessionRole =
+        sessionStorage.getItem("role");
+
+    const registeredDriver =
+        localStorage.getItem("driver_registered");
+
+    const role =
+        sessionRole ||
+        (registeredDriver ? "driver" : null);
+
+    if (
+        !role ||
+        role !== "driver" ||
+        !user ||
+        !user.mobile
+    ) {
+        window.location.href = "/login";
+        return null;
+    }
+
+    driverUser = user;
+
+    return user;
+}
+
+
+/* =========================================================
+   DRIVER AMBULANCE RESOLUTION
+   ========================================================= */
+
+async function resolveDriverAmbulance() {
+
+    if (!driverUser) {
+        return false;
+    }
+
+    const params = new URLSearchParams({
+        mobile: driverUser.mobile || "",
+        driver_id: driverUser.driver_id || "",
+        ambulance_reg_number:
+            driverUser.ambulance_reg_number || ""
+    });
+
+    try {
+
+        const response = await fetch(
+            `/api/driver/my-ambulance?${params.toString()}`,
+            {
+                cache: "no-store"
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+        }
+
+        const data = await response.json();
+
+        if (data && data.ambulance) {
+
+            ambulanceId =
+                data.ambulance.id;
+
+            console.log(
+                "Driver ambulance:",
+                ambulanceId
+            );
+
+            return true;
+        }
+
+        console.error(
+            "No ambulance linked to this driver."
+        );
+
+        showMessage(
+            "No ambulance is linked to this driver account.",
+            "error"
+        );
+
+        return false;
+
+    } catch (error) {
+
+        console.error(
+            "Ambulance resolution failed:",
+            error
+        );
+
+        showMessage(
+            "Unable to load your ambulance details.",
+            "error"
+        );
+
+        return false;
+    }
+}
+
+
+/* =========================================================
+   LOAD DRIVER SUMMARY
+   ========================================================= */
+
+async function loadDriverSummary() {
+
+    if (!ambulanceId) {
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            `/api/driver/summary?ambulance_id=${encodeURIComponent(ambulanceId)}`,
+            {
+                cache: "no-store"
+            }
+        );
+
+        if (!response.ok) {
+            return;
+        }
+
+        const data = await response.json();
+
+        console.log(
+            "Driver summary:",
+            data
+        );
+
+        /*
+         * Keep existing dashboard IDs if present.
+         */
+
+        const trips =
+            getElement("totalTrips");
+
+        if (
+            trips &&
+            data.total_trips !== undefined
+        ) {
+            trips.textContent =
+                data.total_trips;
+        }
+
+        const completed =
+            getElement("completedTrips");
+
+        if (
+            completed &&
+            data.completed_trips !== undefined
+        ) {
+            completed.textContent =
+                data.completed_trips;
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Unable to load driver summary:",
+            error
+        );
+    }
+}
+
+
+/* =========================================================
+   FETCH DRIVER REQUESTS
+   ========================================================= */
+
+async function fetchDriverRequests() {
+
+    if (!ambulanceId) {
+        return null;
+    }
+
+    try {
+
+        const response = await fetch(
+            `/api/driver/requests?ambulance_id=${encodeURIComponent(ambulanceId)}`,
+            {
+                cache: "no-store"
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+        }
+
+        const data =
+            await response.json();
+
+        return {
+            pending:
+                Array.isArray(data.pending)
+                    ? data.pending
+                    : [],
+
+            assigned:
+                Array.isArray(data.assigned)
+                    ? data.assigned
+                    : []
+        };
+
+    } catch (error) {
+
+        console.error(
+            "Unable to load driver requests:",
+            error
+        );
+
+        return null;
+    }
+}
+
+
+/* =========================================================
+   POLLING
+   ========================================================= */
+
+async function poll() {
+
+    if (!ambulanceId) {
+        return;
+    }
+
+    const data =
+        await fetchDriverRequests();
+
+    if (!data) {
+        return;
+    }
+
+    const pending =
+        data.pending || [];
+
+    const assigned =
+        data.assigned || [];
+
+
+    console.log(
+        "Driver requests:",
+        {
+            pending,
+            assigned
+        }
+    );
+
+
+    /* -----------------------------------------------------
+       ACTIVE ASSIGNED REQUESTS
+       ----------------------------------------------------- */
+
+    const activeAssigned =
+        assigned.filter(request => {
+            return isActiveTrip(request.status);
+        });
+
+
+    /* -----------------------------------------------------
+       RESTORE ACTIVE TRIP AFTER PAGE REFRESH
+       ----------------------------------------------------- */
+
+    if (
+        activeAssigned.length &&
+        !currentRequest
+    ) {
+
+        /*
+         * If there are multiple active records,
+         * use the newest one.
+         */
+
+        activeAssigned.sort((a, b) => {
+            return getRequestTime(b) -
+                   getRequestTime(a);
+        });
+
+        const trip =
+            activeAssigned[0];
+
+        try {
+
+            const hospitalsResponse =
+                await fetch(
+                    "/hospitals",
+                    {
+                        cache: "no-store"
+                    }
+                );
+
+            const hospitals =
+                await hospitalsResponse.json();
+
+            if (Array.isArray(hospitals)) {
+
+                trip.hospital_obj =
+                    hospitals.find(
+                        hospital =>
+                            hospital.id ===
+                            trip.hospital
+                    ) || null;
+            }
+
+        } catch (error) {
+
+            console.error(
+                "Unable to load hospital:",
+                error
+            );
+
+            trip.hospital_obj = null;
+        }
+
+        currentRequest = trip;
+
+        showActiveTrip(
+            currentRequest
+        );
+
+        return;
+    }
+
+
+    /* -----------------------------------------------------
+       SYNC CURRENT ACTIVE TRIP
+       ----------------------------------------------------- */
+
+    if (currentRequest) {
+
+        const fresh =
+            assigned.find(
+                request =>
+                    request.id ===
+                    currentRequest.id
+            );
+
+        if (fresh) {
+
+            const oldStatus =
+                normalizeStatus(
+                    currentRequest.status
+                );
+
+            const newStatus =
+                normalizeStatus(
+                    fresh.status
+                );
+
+            currentRequest = {
+                ...currentRequest,
+                ...fresh
+            };
+
+            if (oldStatus !== newStatus) {
+
+                console.log(
+                    "Trip status changed:",
+                    oldStatus,
+                    "→",
+                    newStatus
+                );
+
+                updateTripStatusUI(
+                    currentRequest
+                );
+            }
+
+            /*
+             * Driver already has an active trip.
+             * Do not show another request.
+             */
+
+            if (pendingRequest) {
+                hideRequestCard();
+            }
+
+            return;
+        }
+
+
+        /*
+         * Current trip is no longer assigned.
+         * Clear it so the newest pending request
+         * can be displayed.
+         */
+
+        if (
+            currentRequest &&
+            !activeAssigned.some(
+                request =>
+                    request.id ===
+                    currentRequest.id
+            )
+        ) {
+
+            const status =
+                normalizeStatus(
+                    currentRequest.status
+                );
+
+            if (
+                status === "completed" ||
+                status === "cancelled" ||
+                status === "rejected"
+            ) {
+
+                currentRequest = null;
+
+                hideActiveTrip();
+
+                setTimeout(() => {
+                    poll();
+                }, 300);
+            }
+        }
+
+        return;
+    }
+
+
+    /* -----------------------------------------------------
+       SHOW NEWEST PENDING REQUEST
+       ----------------------------------------------------- */
+
+    if (!currentRequest) {
+
+        const newestPending =
+            getNewestPendingRequest(
+                pending
+            );
+
+        if (newestPending) {
+
+            /*
+             * If this is a new request,
+             * replace the old request card.
+             */
+
+            if (
+                !pendingRequest ||
+                pendingRequest.id !==
+                    newestPending.id
+            ) {
+
+                console.log(
+                    "Showing newest request:",
+                    newestPending.id,
+                    newestPending.patient?.name
+                );
+
+                showRequestCard(
+                    newestPending
+                );
+            }
+
+        } else {
+
+            if (pendingRequest) {
+                hideRequestCard();
+            }
+        }
+    }
+}
+
+
+/* =========================================================
+   REQUEST CARD
+   ========================================================= */
+
+function showRequestCard(request) {
+
+    if (!request) {
+        return;
+    }
+
+    pendingRequest = request;
+
+    console.log(
+        "Incoming emergency:",
+        request
+    );
+
+
+    /*
+     * Existing request card IDs are supported.
+     */
+
+    const card =
+        getElement("requestCard") ||
+        getElement("incomingRequest") ||
+        getElement("incomingEmergency");
+
+
+    if (!card) {
+
+        console.warn(
+            "Request card element not found."
+        );
+
+        return;
+    }
+
+
+    card.style.display = "";
+
+
+    const patient =
+        request.patient || {};
+
+
+    const name =
+        patient.name ||
+        patient.full_name ||
+        "Patient";
+
+
+    const age =
+        patient.age ??
+        "—";
+
+
+    const gender =
+        patient.gender ||
+        "—";
+
+
+    const blood =
+        patient.blood_group ||
+        "—";
+
+
+    const mobile =
+        patient.mobile ||
+        "—";
+
+
+    const emergency =
+        patient.emergency_type ||
+        "Emergency";
+
+
+    /*
+     * Update common element IDs if they exist.
+     */
+
+    const nameEl =
+        getElement("requestPatientName") ||
+        getElement("patientName");
+
+    if (nameEl) {
+        nameEl.textContent = name;
+    }
+
+
+    const ageEl =
+        getElement("requestPatientAge") ||
+        getElement("patientAge");
+
+    if (ageEl) {
+        ageEl.textContent = age;
+    }
+
+
+    const genderEl =
+        getElement("requestPatientGender") ||
+        getElement("patientGender");
+
+    if (genderEl) {
+        genderEl.textContent = gender;
+    }
+
+
+    const bloodEl =
+        getElement("requestPatientBlood") ||
+        getElement("patientBlood");
+
+    if (bloodEl) {
+        bloodEl.textContent = blood;
+    }
+
+
+    const mobileEl =
+        getElement("requestPatientMobile") ||
+        getElement("patientMobile");
+
+    if (mobileEl) {
+        mobileEl.textContent = mobile;
+    }
+
+
+    const emergencyEl =
+        getElement("requestEmergencyType") ||
+        getElement("emergencyType");
+
+    if (emergencyEl) {
+        emergencyEl.textContent =
+            emergency;
+    }
+
+
+    const requestIdEl =
+        getElement("requestId");
+
+    if (requestIdEl) {
+        requestIdEl.textContent =
+            request.id || "—";
+    }
+
+
+    const acceptButton =
+        getElement("acceptRequest");
+
+    if (acceptButton) {
+        acceptButton.onclick =
+            handleAccept;
+    }
+
+
+    const rejectButton =
+        getElement("rejectRequest");
+
+    if (rejectButton) {
+        rejectButton.onclick =
+            handleReject;
+    }
+
+
+    /*
+     * Support buttons with common alternate IDs.
+     */
+
+    const acceptBtn2 =
+        getElement("acceptBtn");
+
+    if (acceptBtn2) {
+        acceptBtn2.onclick =
+            handleAccept;
+    }
+
+
+    const rejectBtn2 =
+        getElement("rejectBtn");
+
+    if (rejectBtn2) {
+        rejectBtn2.onclick =
+            handleReject;
+    }
+}
+
+
+/* =========================================================
+   HIDE REQUEST CARD
+   ========================================================= */
+
+function hideRequestCard() {
+
+    pendingRequest = null;
+
+    const possibleIds = [
+        "requestCard",
+        "incomingRequest",
+        "incomingEmergency"
+    ];
+
+    possibleIds.forEach(id => {
+
+        const element =
+            getElement(id);
+
+        if (element) {
+            element.style.display =
+                "none";
+        }
+    });
+}
+
+
+/* =========================================================
+   ACCEPT REQUEST
+   ========================================================= */
+
+async function handleAccept() {
+
+    if (!pendingRequest) {
+
+        showMessage(
+            "No ambulance request selected.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (!ambulanceId) {
+
+        showMessage(
+            "Your ambulance is not available.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const requestId =
+        pendingRequest.id;
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/driver/accept",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "content-type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        ambulance_id:
+                            ambulanceId,
+
+                        request_id:
+                            requestId
+                    })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                data.message ||
+                "Unable to accept request."
+            );
+        }
+
+
+        console.log(
+            "Request accepted:",
+            data
+        );
+
+
+        /*
+         * Get hospital details.
+         */
+
+        let hospitalObj = null;
+
+        try {
+
+            const hospitalsResponse =
+                await fetch(
+                    "/hospitals",
+                    {
+                        cache: "no-store"
+                    }
+                );
+
+            const hospitals =
+                await hospitalsResponse.json();
+
+
+            if (Array.isArray(hospitals)) {
+
+                const hospitalId =
+                    data.request?.hospital ||
+                    data.hospital ||
+                    pendingRequest.hospital;
+
+
+                hospitalObj =
+                    hospitals.find(
+                        hospital =>
+                            hospital.id ===
+                            hospitalId
+                    ) || null;
+            }
+
+        } catch (error) {
+
+            console.error(
+                "Hospital lookup failed:",
+                error
+            );
+        }
+
+
+        currentRequest = {
+            ...pendingRequest,
+
+            ...(data.request || {}),
+
+            hospital_obj:
+                hospitalObj
+        };
+
+
+        pendingRequest = null;
+
+        hideRequestCard();
+
+
+        showActiveTrip(
+            currentRequest
+        );
+
+
+        showMessage(
+            "Ambulance request accepted.",
+            "success"
+        );
+
+
+        await loadDriverSummary();
+
+
+        /*
+         * Immediately refresh backend state.
+         */
+
+        setTimeout(() => {
+            poll();
+        }, 500);
+
+
+    } catch (error) {
+
+        console.error(
+            "Accept request failed:",
+            error
+        );
+
+
+        showMessage(
+            error.message ||
+            "Unable to accept request.",
+            "error"
+        );
+    }
+}
+
+
+/* =========================================================
+   REJECT REQUEST
+   ========================================================= */
+
+async function handleReject() {
+
+    if (!pendingRequest) {
+
+        showMessage(
+            "No ambulance request selected.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (!ambulanceId) {
+
+        showMessage(
+            "Your ambulance is not available.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const requestId =
+        pendingRequest.id;
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/driver/reject",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "content-type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        ambulance_id:
+                            ambulanceId,
+
+                        request_id:
+                            requestId
+                    })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                data.message ||
+                "Unable to reject request."
+            );
+        }
+
+
+        console.log(
+            "Request rejected:",
+            data
+        );
+
+
+        pendingRequest = null;
+
+        hideRequestCard();
+
+
+        showMessage(
+            "Ambulance request rejected.",
+            "info"
+        );
+
+
+        /*
+         * Check immediately for another
+         * pending request.
+         */
+
+        setTimeout(() => {
+            poll();
+        }, 300);
+
+
+    } catch (error) {
+
+        console.error(
+            "Reject request failed:",
+            error
+        );
+
+
+        showMessage(
+            error.message ||
+            "Unable to reject request.",
+            "error"
+        );
+    }
+}
+
+
+/* =========================================================
+   ACTIVE TRIP
+   ========================================================= */
+
+function showActiveTrip(request) {
+
+    if (!request) {
+        return;
+    }
+
+
+    const possibleIds = [
+        "activeTrip",
+        "activeTripCard",
+        "tripCard"
+    ];
+
+
+    let card = null;
+
+
+    for (const id of possibleIds) {
+
+        const element =
+            getElement(id);
+
+        if (element) {
+            card = element;
+            break;
+        }
+    }
+
+
+    if (card) {
+        card.style.display = "";
+    }
+
+
+    updateTripStatusUI(
+        request
+    );
+
+
+    /*
+     * Draw map if coordinates are available.
+     */
+
+    if (
+        request.patient &&
+        request.patient.latitude &&
+        request.patient.longitude
+    ) {
+
+        updatePatientLocation(
+            request.patient.latitude,
+            request.patient.longitude
+        );
+    }
+
+
+    if (
+        request.hospital_obj &&
+        request.hospital_obj.latitude &&
+        request.hospital_obj.longitude
+    ) {
+
+        updateHospitalLocation(
+            request.hospital_obj.latitude,
+            request.hospital_obj.longitude
+        );
+    }
+}
+
+
+/* =========================================================
+   HIDE ACTIVE TRIP
+   ========================================================= */
+
+function hideActiveTrip() {
+
+    const possibleIds = [
+        "activeTrip",
+        "activeTripCard",
+        "tripCard"
+    ];
+
+
+    possibleIds.forEach(id => {
+
+        const element =
+            getElement(id);
+
+        if (element) {
+            element.style.display =
+                "none";
+        }
+    });
+}
+
+
+/* =========================================================
+   UPDATE TRIP STATUS UI
+   ========================================================= */
+
+function updateTripStatusUI(request) {
+
+    if (!request) {
+        return;
+    }
+
+
+    const status =
+        normalizeStatus(
+            request.status
+        );
+
+
+    const statusText =
+        status === "accepted"
+            ? "Accepted"
+            : status === "en_route"
+                ? "En Route"
+                : status === "enroute"
+                    ? "En Route"
+                    : status === "picked_up"
+                        ? "Patient Picked Up"
+                        : status === "completed"
+                            ? "Completed"
+                            : status === "cancelled"
+                                ? "Cancelled"
+                                : status;
+
+
+    const statusElements = [
+        "tripStatus",
+        "activeTripStatus",
+        "statusText"
+    ];
+
+
+    statusElements.forEach(id => {
+
+        const element =
+            getElement(id);
+
+        if (element) {
+            element.textContent =
+                statusText;
+        }
+    });
+
+
+    const requestId =
+        getElement("activeRequestId");
+
+    if (requestId) {
+        requestId.textContent =
+            request.id || "—";
+    }
+
+
+    const patientName =
+        getElement("activePatientName");
+
+    if (patientName) {
+
+        patientName.textContent =
+            request.patient?.name ||
+            request.patient?.full_name ||
+            "Patient";
+    }
+}
+
+
+/* =========================================================
+   MAP
+   ========================================================= */
+
+function initializeMap() {
+
+    if (
+        typeof L === "undefined"
+    ) {
+        console.warn(
+            "Leaflet is not loaded."
+        );
+
+        return;
+    }
+
+
+    const mapElement =
+        getElement("map");
+
+
+    if (!mapElement) {
+        return;
+    }
+
+
+    if (map) {
+        return;
+    }
+
+
+    map = L.map(
+        "map"
+    ).setView(
+        [13.2025, 77.6221],
+        13
+    );
+
+
+    L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+            maxZoom: 19,
+            attribution:
+                "&copy; OpenStreetMap contributors"
+        }
+    ).addTo(map);
+}
+
+
+/* =========================================================
+   DRIVER LOCATION ON MAP
+   ========================================================= */
+
+function updateDriverLocation(
+    latitude,
+    longitude
+) {
+
+    if (
+        !map ||
+        latitude == null ||
+        longitude == null
+    ) {
+        return;
+    }
+
+
+    const position = [
+        latitude,
+        longitude
+    ];
+
+
+    if (!driverMarker) {
+
+        driverMarker =
+            L.marker(position)
+                .addTo(map)
+                .bindPopup(
+                    "Ambulance"
+                );
+
+    } else {
+
+        driverMarker.setLatLng(
+            position
+        );
+    }
+}
+
+
+/* =========================================================
+   PATIENT LOCATION
+   ========================================================= */
+
+function updatePatientLocation(
+    latitude,
+    longitude
+) {
+
+    if (
+        !map ||
+        latitude == null ||
+        longitude == null
+    ) {
+        return;
+    }
+
+
+    const position = [
+        latitude,
+        longitude
+    ];
+
+
+    if (!patientMarker) {
+
+        patientMarker =
+            L.marker(position)
+                .addTo(map)
+                .bindPopup(
+                    "Patient"
+                );
+
+    } else {
+
+        patientMarker.setLatLng(
+            position
+        );
+    }
+}
+
+
+/* =========================================================
+   HOSPITAL LOCATION
+   ========================================================= */
+
+function updateHospitalLocation(
+    latitude,
+    longitude
+) {
+
+    if (
+        !map ||
+        latitude == null ||
+        longitude == null
+    ) {
+        return;
+    }
+
+
+    const position = [
+        latitude,
+        longitude
+    ];
+
+
+    if (!hospitalMarker) {
+
+        hospitalMarker =
+            L.marker(position)
+                .addTo(map)
+                .bindPopup(
+                    "Hospital"
+                );
+
+    } else {
+
+        hospitalMarker.setLatLng(
+            position
+        );
+    }
+}
+
+
+/* =========================================================
+   GPS
+   ========================================================= */
+
+function startGPS() {
+
+    if (
+        !navigator.geolocation
+    ) {
+
+        console.warn(
+            "Geolocation is not supported."
+        );
+
+        return;
+    }
+
+
+    navigator.geolocation.watchPosition(
+
+        async position => {
+
+            const latitude =
+                position.coords.latitude;
+
+            const longitude =
+                position.coords.longitude;
+
+
+            updateDriverLocation(
+                latitude,
+                longitude
+            );
+
+
+            if (!ambulanceId) {
+                return;
+            }
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/api/driver/location",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "content-type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify({
+                                    ambulance_id:
+                                        ambulanceId,
+
+                                    latitude:
+                                        latitude,
+
+                                    longitude:
+                                        longitude
+                                })
+                        }
+                    );
+
+
+                if (!response.ok) {
+                    return;
+                }
+
+
+                /*
+                 * Automatic trip status
+                 * is intentionally kept here.
+                 */
+
+                if (currentRequest) {
+
+                    await updateTripByDistance(
+                        latitude,
+                        longitude
+                    );
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "GPS update failed:",
+                    error
+                );
+            }
+        },
+
+        error => {
+
+            console.warn(
+                "GPS error:",
+                error.message
+            );
+        },
+
+        {
+            enableHighAccuracy:
+                true,
+
+            maximumAge:
+                5000,
+
+            timeout:
+                10000
+        }
+    );
+}
+
+
+/* =========================================================
+   DISTANCE
+   ========================================================= */
+
+function calculateDistance(
+    lat1,
+    lon1,
+    lat2,
+    lon2
+) {
+
+    const R = 6371;
+
+    const dLat =
+        (lat2 - lat1) *
+        Math.PI / 180;
+
+    const dLon =
+        (lon2 - lon1) *
+        Math.PI / 180;
+
+
+    const a =
+        Math.sin(dLat / 2) *
+        Math.sin(dLat / 2) +
+
+        Math.cos(
+            lat1 * Math.PI / 180
+        ) *
+
+        Math.cos(
+            lat2 * Math.PI / 180
+        ) *
+
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+
+    const c =
+        2 *
+        Math.atan2(
+            Math.sqrt(a),
+            Math.sqrt(1 - a)
+        );
+
+
+    return R * c;
+}
+
+
+/* =========================================================
+   AUTOMATIC TRIP STATUS
+   ========================================================= */
+
+async function updateTripByDistance(
+    driverLat,
+    driverLon
+) {
+
+    if (!currentRequest) {
+        return;
+    }
+
+
+    const patient =
+        currentRequest.patient || {};
+
+
+    const hospital =
+        currentRequest.hospital_obj ||
+        {};
+
+
+    const status =
+        normalizeStatus(
+            currentRequest.status
+        );
+
+
+    let newStatus = null;
+
+
+    /*
+     * ACCEPTED → EN_ROUTE
+     */
+
+    if (
+        status === "accepted" &&
+        patient.latitude != null &&
+        patient.longitude != null
+    ) {
+
+        const distance =
+            calculateDistance(
+                driverLat,
+                driverLon,
+                patient.latitude,
+                patient.longitude
+            );
+
+
+        if (distance <= 0.3) {
+            newStatus = "en_route";
+        }
+    }
+
+
+    /*
+     * EN_ROUTE → PICKED_UP
+     */
+
+    else if (
+        status === "en_route" ||
+        status === "enroute"
+    ) {
+
+        if (
+            patient.latitude != null &&
+            patient.longitude != null
+        ) {
+
+            const distance =
+                calculateDistance(
+                    driverLat,
+                    driverLon,
+                    patient.latitude,
+                    patient.longitude
+                );
+
+
+            if (distance <= 0.15) {
+                newStatus = "picked_up";
+            }
+        }
+    }
+
+
+    /*
+     * PICKED_UP → COMPLETED
+     */
+
+    else if (
+        status === "picked_up"
+    ) {
+
+        if (
+            hospital.latitude != null &&
+            hospital.longitude != null
+        ) {
+
+            const distance =
+                calculateDistance(
+                    driverLat,
+                    driverLon,
+                    hospital.latitude,
+                    hospital.longitude
+                );
+
+
+            if (distance <= 0.3) {
+                newStatus = "completed";
+            }
+        }
+    }
+
+
+    if (!newStatus) {
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/driver/trip-status",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "content-type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            ambulance_id:
+                                ambulanceId,
+
+                            request_id:
+                                currentRequest.id,
+
+                            status:
+                                newStatus
+                        })
+                }
+            );
+
+
+        if (!response.ok) {
+            return;
+        }
+
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "Trip status updated:",
+            data
+        );
+
+
+        currentRequest.status =
+            newStatus;
+
+
+        updateTripStatusUI(
+            currentRequest
+        );
+
+
+        if (
+            newStatus ===
+            "completed"
+        ) {
+
+            setTimeout(() => {
+
+                currentRequest =
+                    null;
+
+                hideActiveTrip();
+
+                poll();
+
+            }, 4000);
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Trip status update failed:",
+            error
+        );
+    }
+}
+
+
+/* =========================================================
+   LOGOUT
+   ========================================================= */
+
+function logout() {
+
+    try {
+        sessionStorage.removeItem(
+            "user"
+        );
+
+        sessionStorage.removeItem(
+            "role"
+        );
+
+        sessionStorage.removeItem(
+            "mobile"
+        );
+
+        localStorage.removeItem(
+            "driver_registered"
+        );
+
+        localStorage.removeItem(
+            "driver_data"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Logout cleanup failed:",
+            error
+        );
+    }
+
+
+    if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+    }
+
+
+    window.location.href = "/";
+}
+
+
+/* =========================================================
+   INITIALIZATION
+   ========================================================= */
+
+async function initializeDriverDashboard() {
+
+    console.log(
+        "Initializing LifeLine Driver Dashboard..."
+    );
+
+
+    const user =
+        loadDriverUser();
+
+
+    if (!user) {
+        return;
+    }
+
+
+    /*
+     * IMPORTANT:
+     * We no longer fall back to AMB001,
+     * AMB002, or the first ambulance.
+     */
+
+    const ambulanceResolved =
+        await resolveDriverAmbulance();
+
+
+    if (!ambulanceResolved) {
+        return;
+    }
+
+
+    initializeMap();
+
+
+    await loadDriverSummary();
+
+
+    /*
+     * Get requests immediately.
+     */
+
+    await poll();
+
+
+    /*
+     * Continue polling every 10 seconds.
+     */
+
+    if (pollTimer) {
+        clearInterval(pollTimer);
+    }
+
+
+    pollTimer =
+        setInterval(
+            poll,
+            POLL_MS
+        );
+
+
+    /*
+     * Start GPS tracking.
+     */
+
+    startGPS();
+}
+
+
+/* =========================================================
+   PAGE EVENTS
+   ========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        initializeDriverDashboard();
+    }
+);
+
+
+/* =========================================================
+   GLOBAL FUNCTIONS
+   ========================================================= */
+
+window.handleAccept =
+    handleAccept;
+
+window.handleReject =
+    handleReject;
+
+window.logout =
+    logout;
+
+window.pollDriverRequests =
+    poll;
+
+window.showRequestCard =
+    showRequestCard;
+
+window.hideRequestCard =
+    hideRequestCard;

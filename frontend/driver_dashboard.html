@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>LifeLine — Driver Dashboard</title>
+
+  <link rel="stylesheet" href="driver_dashboard.css" />
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    /* =========================================================
+       LIFELINE DRIVER DASHBOARD
+       Unified Ambulance AI Theme
+       ========================================================= */
+
+    :root {
+      --red: #C62828;
+      --red-dark: #B71C1C;
+      --red-deep: #8E0000;
+      --red-light: #FFEBEE;
+      --red-mid: #E57373;
+
+      --navy: #0D1B2A;
+      --navy-mid: #162536;
+      --navy-card: #1E3042;
+      --navy-line: #2A3E52;
+      --navy-muted: #718096;
+
+      --white: #FFFFFF;
+      --off-white: #F8F9FA;
+      --gray-50: #F5F6F8;
+      --gray-100: #ECEEF1;
+      --gray-200: #D5D9DE;
+      --gray-400: #9AA1AA;
+      --gray-600: #4B5563;
+      --gray-800: #1F2937;
+      --black: #111827;
+
+      --success: #16803C;
+      --success-bg: #EAF7EF;
+      --success-bdr: #A8D8B8;
+
+      --warn: #B45309;
+      --warn-bg: #FFF7E6;
+
+      --info: #1D4ED8;
+      --info-bg: #EFF6FF;
+
+      --font:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
+
+      --shadow-sm:
+        0 1px 3px rgba(0, 0, 0, 0.08),
+        0 1px 2px rgba(0, 0, 0, 0.04);
+
+      --shadow-md:
+        0 4px 12px rgba(0, 0, 0, 0.10),
+        0 2px 6px rgba(0, 0, 0, 0.05);
+
+      --shadow-red:
+        0 4px 16px rgba(198, 40, 40, 0.22);
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--off-white);
+      color: var(--gray-800);
+      min-height: 100vh;
+      padding-bottom: 104px;
+    }
+
+    button,
+    input {
+      font-family: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app {
+      min-height: 100vh;
+      max-width: 760px;
+      margin: 0 auto;
+      background: var(--off-white);
+      position: relative;
+    }
+
+    /* =========================================================
+       HEADER
+       ========================================================= */
+
+    .header {
+      height: 70px;
+      background: var(--navy);
+      color: var(--white);
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.14);
+    }
+
+    .left {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 11px;
+      background: var(--red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .avatar svg {
+      width: 22px;
+      height: 22px;
+      stroke: #fff;
+      fill: none;
+      stroke-width: 1.9;
+    }
+
+    .greeting {
+      min-width: 0;
+    }
+
+    .hello {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.52);
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .name {
+      font-size: 16px;
+      font-weight: 800;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+    }
+
+    .right {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    /* =========================================================
+       ONLINE TOGGLE
+       ========================================================= */
+
+    .toggle {
+      position: relative;
+      width: 48px;
+      height: 26px;
+      display: inline-block;
+      cursor: pointer;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: #4B5563;
+      border-radius: 999px;
+      transition: 0.2s;
+    }
+
+    .slider::before {
+      content: "";
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      left: 3px;
+      top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: 0.2s;
+      box-shadow: 0 1px 4px rgba(0,0,0,.25);
+    }
+
+    .toggle input:checked + .slider {
+      background: var(--success);
+    }
+
+    .toggle input:checked + .slider::before {
+      transform: translateX(22px);
+    }
+
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.07);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: .15s ease;
+    }
+
+    .icon-btn:hover {
+      background: rgba(255,255,255,.14);
+    }
+
+    .icon-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+    }
+
+    /* =========================================================
+       MAIN
+       ========================================================= */
+
+    .main {
+      padding-bottom: 12px;
+    }
+
+    .dashboard-section {
+      width: 100%;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* =========================================================
+       MAP
+       ========================================================= */
+
+    .map-wrap {
+      background: #fff;
+      border-bottom: 1px solid var(--gray-100);
+      overflow: hidden;
+      position: relative;
+    }
+
+    #map {
+      width: 100%;
+      height: 260px;
+      min-height: 260px;
+    }
+
+    .leaflet-control-zoom {
+      border: none !important;
+      box-shadow: var(--shadow-md) !important;
+    }
+
+    .leaflet-control-zoom a {
+      color: var(--navy) !important;
+    }
+
+    /* =========================================================
+       CONTENT CARDS
+       ========================================================= */
+
+    .card {
+      background: var(--white);
+      margin: 14px 16px 0;
+      border: 1px solid var(--gray-100);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .card-header {
+      min-height: 54px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--gray-800);
+    }
+
+    .title-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      background: var(--red-light);
+      color: var(--red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .title-icon svg {
+      width: 17px;
+      height: 17px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.9;
+    }
+
+    .card-body {
+      padding: 4px 16px 10px;
+    }
+
+    /* =========================================================
+       INCOMING EMERGENCY
+       ========================================================= */
+
+    #request-card {
+      border: 1.5px solid #F1B5B5;
+      box-shadow: var(--shadow-red);
+    }
+
+    #request-card .card-header {
+      background: var(--red-light);
+      border-bottom-color: #F3CCCC;
+    }
+
+    .priority {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      font-weight: 800;
+      padding: 5px 9px;
+      border-radius: 999px;
+    }
+
+    .priority.high {
+      background: #FDE8E8;
+      color: var(--red-dark);
+      border: 1px solid #F3B7B7;
+    }
+
+    .row {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      border-bottom: 1px solid var(--gray-100);
+      font-size: 12px;
+    }
+
+    .row:last-child {
+      border-bottom: none;
+    }
+
+    .row span {
+      color: var(--gray-400);
+      font-weight: 500;
+    }
+
+    .row strong {
+      color: var(--gray-800);
+      font-size: 12px;
+      font-weight: 700;
+      text-align: right;
+      max-width: 62%;
+      overflow-wrap: anywhere;
+    }
+
+    .card-actions {
+      padding: 12px 16px 15px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      border-top: 1px solid var(--gray-100);
+    }
+
+    /* =========================================================
+       BUTTONS
+       ========================================================= */
+
+    .btn {
+      min-height: 44px;
+      border: none;
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: .15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+
+    .btn svg {
+      width: 17px;
+      height: 17px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.9;
+    }
+
+    .btn-danger {
+      color: var(--red);
+      background: var(--red-light);
+      border: 1px solid #F1B5B5;
+    }
+
+    .btn-danger:hover {
+      background: #FFCDD2;
+    }
+
+    .btn-accept {
+      color: #fff;
+      background: var(--success);
+      box-shadow: 0 3px 10px rgba(22,128,60,.18);
+    }
+
+    .btn-accept:hover {
+      background: #116A32;
+    }
+
+    .btn-primary {
+      color: #fff;
+      background: var(--red);
+      box-shadow: var(--shadow-red);
+    }
+
+    .btn-primary:hover {
+      background: var(--red-dark);
+    }
+
+    /* =========================================================
+       STATISTICS
+       ========================================================= */
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      padding: 14px 16px 16px;
+    }
+
+    .stat {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-100);
+      border-radius: 12px;
+      padding: 13px;
+      min-height: 78px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .stat .num {
+      font-size: 20px;
+      font-weight: 850;
+      color: var(--navy);
+      letter-spacing: -.3px;
+    }
+
+    .stat .label {
+      margin-top: 4px;
+      font-size: 10px;
+      color: var(--gray-400);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .45px;
+    }
+
+    /* =========================================================
+       ACTIVE TRIP
+       ========================================================= */
+
+    #current-trip {
+      border-color: #C9D9E7;
+    }
+
+    #current-trip .card-header {
+      background: #F4F8FB;
+    }
+
+    /* =========================================================
+       TRACKER
+       ========================================================= */
+
+    .tracker {
+      padding: 16px;
+    }
+
+    .tracker-steps {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .tracker-steps::before {
+      content: "";
+      position: absolute;
+      left: 7px;
+      top: 9px;
+      bottom: 9px;
+      width: 2px;
+      background: var(--gray-200);
+    }
+
+    .step {
+      position: relative;
+      min-height: 38px;
+      padding: 0 0 18px 28px;
+      color: var(--gray-400);
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 16px;
+    }
+
+    .step::before {
+      content: "";
+      position: absolute;
+      left: 2px;
+      top: 3px;
+      width: 12px;
+      height: 12px;
+      background: var(--white);
+      border: 2px solid var(--gray-200);
+      border-radius: 50%;
+      z-index: 2;
+    }
+
+    .step.active {
+      color: var(--red);
+      font-weight: 800;
+    }
+
+    .step.active::before {
+      background: var(--red);
+      border-color: var(--red);
+      box-shadow: 0 0 0 4px var(--red-light);
+    }
+
+    .step:last-child {
+      padding-bottom: 0;
+    }
+
+    /* =========================================================
+       OTHER SECTIONS
+       ========================================================= */
+
+    #trips-section,
+    #messages-section,
+    #profile-section {
+      padding-top: 4px;
+    }
+
+    .empty-state {
+      padding: 35px 18px;
+      text-align: center;
+      color: var(--gray-400);
+    }
+
+    .empty-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 10px;
+      border-radius: 13px;
+      background: var(--gray-50);
+      color: var(--gray-400);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .empty-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.7;
+    }
+
+    .empty-state p {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* =========================================================
+       PROFILE
+       ========================================================= */
+
+    #profile-section .card-body {
+      padding-top: 3px;
+    }
+
+    #profile-section .card-actions {
+      display: block;
+    }
+
+    #profile-section .card-actions .btn {
+      width: 100%;
+    }
+
+    /* =========================================================
+       BOTTOM NAVIGATION
+       ========================================================= */
+
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--white);
+      border-top: 1px solid var(--gray-100);
+      box-shadow: 0 -4px 18px rgba(0,0,0,.07);
+      z-index: 1100;
+      padding: 8px 12px 10px;
+    }
+
+    .nav {
+      max-width: 760px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 3px;
+    }
+
+    .nav-item {
+      border: none;
+      background: transparent;
+      color: var(--gray-400);
+      min-height: 54px;
+      border-radius: 11px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      font-size: 9px;
+      font-weight: 700;
+      transition: .15s ease;
+    }
+
+    .nav-item:hover {
+      background: var(--gray-50);
+    }
+
+    .nav-item.active {
+      color: var(--red);
+      background: var(--red-light);
+    }
+
+    .nav-icon {
+      width: 21px;
+      height: 21px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-icon svg {
+      width: 19px;
+      height: 19px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+    }
+
+    /* =========================================================
+       DRIVER EMERGENCY
+       ========================================================= */
+
+    .emergency {
+      width: 100%;
+      max-width: 760px;
+      margin: 7px auto 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 42px;
+      border-radius: 10px;
+      border: 1px solid #F1B5B5;
+      background: var(--red-light);
+      color: var(--red-dark);
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .emergency:hover {
+      background: #FFCDD2;
+    }
+
+    .emergency svg {
+      width: 17px;
+      height: 17px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.9;
+    }
+
+    /* =========================================================
+       RESPONSIVE
+       ========================================================= */
+
+    @media (min-width: 700px) {
+      body {
+        background: #EEF1F4;
+      }
+
+      .app {
+        min-height: 100vh;
+        box-shadow:
+          0 0 30px rgba(0,0,0,.08);
+      }
+
+      .header {
+        border-radius: 0;
+      }
+
+      .card {
+        margin-left: 20px;
+        margin-right: 20px;
+      }
+
+      .bottom-bar {
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: 760px;
+      }
+    }
+
+    @media (max-width: 390px) {
+      .name {
+        max-width: 135px;
+      }
+
+      .header {
+        padding: 0 12px;
+      }
+
+      .card {
+        margin-left: 12px;
+        margin-right: 12px;
+      }
+
+      .stats-grid {
+        gap: 7px;
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      .card-header {
+        padding-left: 13px;
+        padding-right: 13px;
+      }
+
+      .card-body {
+        padding-left: 13px;
+        padding-right: 13px;
+      }
+
+      .card-actions {
+        padding-left: 13px;
+        padding-right: 13px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <!-- =======================================================
+       HEADER
+       ======================================================= -->
+  <header class="header">
+
+    <div class="left">
+
+      <div class="avatar" aria-label="Driver">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="7" r="3.2"></circle>
+          <path d="M5.5 20c.7-4.1 2.9-6.2 6.5-6.2s5.8 2.1 6.5 6.2"></path>
+          <path d="M8 11.5h8"></path>
+        </svg>
+      </div>
+
+      <div class="greeting">
+        <div class="hello">Welcome back</div>
+        <div id="driver-name" class="name">Driver</div>
+      </div>
+
+    </div>
+
+    <div class="right">
+
+      <!-- Online / Offline -->
+      <label class="toggle" title="Online / Offline">
+        <input id="online-toggle" type="checkbox" checked />
+        <span class="slider"></span>
+      </label>
+
+      <!-- Notifications -->
+      <div class="icon-btn" id="notif-btn" title="Notifications">
+        <svg viewBox="0 0 24 24">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+          <path d="M10 21h4"></path>
+        </svg>
+      </div>
+
+      <!-- Logout -->
+      <div class="icon-btn" onclick="logout()" title="Sign Out">
+        <svg viewBox="0 0 24 24">
+          <path d="M10 17l5-5-5-5"></path>
+          <path d="M15 12H3"></path>
+          <path d="M21 3v18"></path>
+        </svg>
+      </div>
+
+    </div>
+  </header>
+
+
+  <!-- =======================================================
+       HOME SECTION
+       ======================================================= -->
+
+  <main id="home-section" class="main dashboard-section">
+
+    <!-- MAP -->
+    <div class="map-wrap">
+      <div id="map"></div>
+    </div>
+
+
+    <!-- =====================================================
+         INCOMING EMERGENCY REQUEST
+         ===================================================== -->
+
+    <div class="card hidden" id="request-card">
+
+      <div class="card-header">
+
+        <div class="title">
+
+          <span class="title-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M10.3 3.8L2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z"></path>
+              <path d="M12 9v4"></path>
+              <circle cx="12" cy="16.5" r=".8" fill="currentColor" stroke="none"></circle>
+            </svg>
+          </span>
+
+          Incoming Emergency
+
+        </div>
+
+        <div id="req-priority" class="priority high">
+          High
+        </div>
+
+      </div>
+
+
+      <div class="card-body">
+
+        <div class="row">
+          <span>Emergency Type</span>
+          <strong id="req-type">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Patient Name</span>
+          <strong id="req-patient">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Age / Gender</span>
+          <strong id="req-age-gender">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Blood Group</span>
+          <strong id="req-blood">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Mobile</span>
+          <strong id="req-mobile">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Distance</span>
+          <strong id="req-distance">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Est. Arrival</span>
+          <strong id="req-eta">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Pickup Location</span>
+          <strong id="req-pickup">—</strong>
+        </div>
+
+      </div>
+
+
+      <div class="card-actions">
+
+        <button id="reject-btn" class="btn btn-danger">
+
+          <svg viewBox="0 0 24 24">
+            <path d="M6 6l12 12"></path>
+            <path d="M18 6L6 18"></path>
+          </svg>
+
+          Reject
+
+        </button>
+
+
+        <button id="accept-btn" class="btn btn-accept">
+
+          <svg viewBox="0 0 24 24">
+            <path d="M5 12.5l4 4L19 6.5"></path>
+          </svg>
+
+          Accept
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         TODAY'S SUMMARY
+         ===================================================== -->
+
+    <div class="card">
+
+      <div class="card-header">
+
+        <div class="title">
+
+          <span class="title-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 19V5"></path>
+              <path d="M4 19h17"></path>
+              <path d="M7 15l4-4 3 2 5-6"></path>
+            </svg>
+          </span>
+
+          Today's Summary
+
+        </div>
+
+      </div>
+
+
+      <div class="stats-grid">
+
+        <div class="stat">
+          <div class="num" id="stat-trips">0</div>
+          <div class="label">Trips Today</div>
+        </div>
+
+        <div class="stat">
+          <div class="num" id="stat-earn">₹0</div>
+          <div class="label">Earnings</div>
+        </div>
+
+        <div class="stat">
+          <div class="num" id="stat-rating">5.0</div>
+          <div class="label">Rating</div>
+        </div>
+
+        <div class="stat">
+          <div class="num" id="stat-total">0</div>
+          <div class="label">Total Trips</div>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         CURRENT ACTIVE TRIP
+         ===================================================== -->
+
+    <div class="card hidden" id="current-trip">
+
+      <div class="card-header">
+
+        <div class="title">
+
+          <span class="title-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"></path>
+              <circle cx="12" cy="10" r="2.3"></circle>
+            </svg>
+          </span>
+
+          Active Trip
+
+        </div>
+
+      </div>
+
+
+      <div class="card-body">
+
+        <div class="row">
+          <span>Patient</span>
+          <strong id="trip-patient">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Age / Gender</span>
+          <strong id="trip-age-gender">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Blood Group</span>
+          <strong id="trip-blood">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Mobile</span>
+          <strong id="trip-mobile">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Emergency</span>
+          <strong id="trip-emergency">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Pickup</span>
+          <strong id="trip-pickup">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Hospital</span>
+          <strong id="trip-dest">—</strong>
+        </div>
+
+        <div class="row">
+          <span>ETA</span>
+          <strong id="trip-eta">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Distance Left</span>
+          <strong id="trip-dist">—</strong>
+        </div>
+
+      </div>
+
+
+      <div class="card-actions">
+
+        <a
+          id="navigate-btn"
+          class="btn btn-primary"
+          target="_blank"
+          style="text-decoration:none;"
+        >
+
+          <svg viewBox="0 0 24 24">
+            <path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"></path>
+            <circle cx="12" cy="10" r="2.3"></circle>
+          </svg>
+
+          Navigate
+
+        </a>
+
+      </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         TRIP STATUS
+         ===================================================== -->
+
+    <div class="card" style="margin-bottom:0;">
+
+      <div class="card-header">
+
+        <div class="title">
+
+          <span class="title-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M5 12h14"></path>
+              <path d="M12 5l7 7-7 7"></path>
+            </svg>
+          </span>
+
+          Trip Status
+
+        </div>
+
+      </div>
+
+
+      <div class="tracker">
+
+        <div class="tracker-steps" id="tracker">
+
+          <div class="step active">
+            Request Received
+          </div>
+
+          <div class="step">
+            Accepted
+          </div>
+
+          <div class="step">
+            En Route to Patient
+          </div>
+
+          <div class="step">
+            Patient Picked Up
+          </div>
+
+          <div class="step">
+            En Route to Hospital
+          </div>
+
+          <div class="step">
+            Trip Completed
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <!-- =======================================================
+       TRIPS SECTION
+       ======================================================= -->
+
+  <section id="trips-section" class="dashboard-section hidden">
+
+    <div class="card">
+
+      <div class="card-header">
+
+        <div class="title">
+
+          <span class="title-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M6 3h12"></path>
+              <path d="M6 7h12"></path>
+              <path d="M6 11h8"></path>
+              <path d="M6 15h12"></path>
+              <path d="M6 19h8"></path>
+            </svg>
+          </span>
+
+          My Trips
+
+        </div>
+
+      </div>
+
+      <div class="card-body">
+
+        <div id="trips-list">
+
+          <div class="empty-state">
+
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24">
+                <path d="M6 3h12v18H6z"></path>
+                <path d="M9 7h6"></path>
+                <path d="M9 11h6"></path>
+                <path d="M9 15h4"></path>
+              </svg>
+            </div>
+
+            <p>No trips yet.</p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =======================================================
+       MESSAGES SECTION
+       ======================================================= -->
+
+  <section id="messages-section" class="dashboard-section hidden">
+
+    <div class="card">
+
+      <div class="card-header">
+
+        <div class="title">
+
+          <span class="title-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 5h16v12H7l-3 3V5Z"></path>
+              <path d="M8 9h8"></path>
+              <path d="M8 13h5"></path>
+            </svg>
+          </span>
+
+          Messages
+
+        </div>
+
+      </div>
+
+      <div class="card-body">
+
+        <div class="empty-state">
+
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 5h16v12H7l-3 3V5Z"></path>
+              <path d="M8 9h8"></path>
+              <path d="M8 13h5"></path>
+            </svg>
+          </div>
+
+          <p>No messages yet.</p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =======================================================
+       PROFILE SECTION
+       ======================================================= -->
+
+  <section id="profile-section" class="dashboard-section hidden">
+
+    <div class="card">
+
+      <div class="card-header">
+
+        <div class="title">
+
+          <span class="title-icon">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="8" r="3"></circle>
+              <path d="M5 20c.8-4 3.1-6 7-6s6.2 2 7 6"></path>
+            </svg>
+          </span>
+
+          My Profile
+
+        </div>
+
+      </div>
+
+
+      <div class="card-body">
+
+        <div class="row">
+          <span>Name</span>
+          <strong id="profile-name-text">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Driver ID</span>
+          <strong id="profile-driver-id">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Ambulance</span>
+          <strong id="profile-ambulance">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Licence No.</span>
+          <strong id="profile-licence">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Vehicle Type</span>
+          <strong id="profile-vehicle">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Organisation</span>
+          <strong id="profile-org">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Email</span>
+          <strong id="profile-email">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Mobile</span>
+          <strong id="profile-mobile">—</strong>
+        </div>
+
+        <div class="row">
+          <span>Status</span>
+          <strong id="profile-status">Online</strong>
+        </div>
+
+        <div class="row">
+          <span>Trips Today</span>
+          <strong id="profile-trips">0</strong>
+        </div>
+
+        <div class="row">
+          <span>Earnings</span>
+          <strong id="profile-earn">₹0</strong>
+        </div>
+
+        <div class="row">
+          <span>Total Completed</span>
+          <strong id="profile-completed">0</strong>
+        </div>
+
+      </div>
+
+
+      <div class="card-actions">
+
+        <button class="btn btn-danger" onclick="logout()">
+
+          <svg viewBox="0 0 24 24">
+            <path d="M10 17l5-5-5-5"></path>
+            <path d="M15 12H3"></path>
+            <path d="M21 3v18"></path>
+          </svg>
+
+          Sign Out
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =======================================================
+       BOTTOM NAVIGATION
+       ======================================================= -->
+
+  <footer class="bottom-bar">
+
+    <nav class="nav">
+
+      <!-- HOME -->
+      <button class="nav-item active" data-section="home-section">
+
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M3 10.5L12 3l9 7.5"></path>
+            <path d="M5.5 9.5V21h13V9.5"></path>
+            <path d="M9.5 21v-6h5v6"></path>
+          </svg>
+        </span>
+
+        Home
+
+      </button>
+
+
+      <!-- TRIPS -->
+      <button class="nav-item" data-section="trips-section">
+
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M6 3h12v18H6z"></path>
+            <path d="M9 7h6"></path>
+            <path d="M9 11h6"></path>
+            <path d="M9 15h4"></path>
+          </svg>
+        </span>
+
+        Trips
+
+      </button>
+
+
+      <!-- MESSAGES -->
+      <button class="nav-item" data-section="messages-section">
+
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 5h16v12H7l-3 3V5Z"></path>
+            <path d="M8 9h8"></path>
+            <path d="M8 13h5"></path>
+          </svg>
+        </span>
+
+        Messages
+
+      </button>
+
+
+      <!-- PROFILE -->
+      <button class="nav-item" data-section="profile-section">
+
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="8" r="3"></circle>
+            <path d="M5 20c.8-4 3.1-6 7-6s6.2 2 7 6"></path>
+          </svg>
+        </span>
+
+        Profile
+
+      </button>
+
+    </nav>
+
+
+    <!-- DRIVER EMERGENCY -->
+
+    <button id="emergency-btn" class="emergency">
+
+      <svg viewBox="0 0 24 24">
+        <path d="M10.3 3.8L2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z"></path>
+        <path d="M12 9v4"></path>
+        <circle
+          cx="12"
+          cy="16.5"
+          r=".8"
+          fill="currentColor"
+          stroke="none">
+        </circle>
+      </svg>
+
+      Driver Emergency
+
+    </button>
+
+  </footer>
+
+</div>
+
+
+<!-- =========================================================
+     EXISTING DRIVER JAVASCRIPT
+     ========================================================= -->
+
+<script type="module" src="driver_dashboard.js"></script>
+
+<script>
+  function logout() {
+    sessionStorage.clear();
+    localStorage.removeItem('driver_registered');
+    localStorage.removeItem('driver_data');
+    window.location.href = '/';
+  }
+</script>
+
+</body>
+</html>

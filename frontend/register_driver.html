@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LifeLine — Driver Registration</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --red:       #C62828;
+      --red-dark:  #B71C1C;
+      --red-light: #FFEBEE;
+      --navy:      #0D1B2A;
+      --white:     #FFFFFF;
+      --off-white: #F8F9FB;
+      --gray-100:  #E8EAED;
+      --gray-200:  #D1D5DB;
+      --gray-400:  #9CA3AF;
+      --gray-600:  #4B5563;
+      --gray-800:  #1F2937;
+      --success:   #1B7A3E;
+      --success-bg:#E6F4EC;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--off-white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 0 48px;
+    }
+
+    .page-header {
+      width: 100%;
+      background: var(--navy);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .back-btn {
+      width: 36px; height: 36px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; cursor: pointer;
+      text-decoration: none; color: rgba(255,255,255,0.80);
+      transition: background 0.15s; flex-shrink: 0;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.14); }
+    .page-header-info { flex: 1; }
+    .page-header-info h2 { font-size: 16px; font-weight: 700; color: var(--white); }
+    .page-header-info p  { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 1px; }
+    .header-badge {
+      width: 36px; height: 36px;
+      background: var(--red); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; flex-shrink: 0;
+    }
+    .header-badge .cv, .header-badge .ch {
+      position: absolute; background: #fff; border-radius: 1px;
+    }
+    .header-badge .cv { width: 6px; height: 18px; }
+    .header-badge .ch { width: 18px; height: 6px; }
+
+    .card {
+      background: var(--white);
+      border-radius: 0 0 16px 16px;
+      width: 100%; max-width: 480px;
+      padding: 24px 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    .progress-bar { height: 3px; background: var(--gray-100); border-radius: 2px; margin-bottom: 24px; overflow: hidden; }
+    .progress-fill { height: 100%; width: 100%; background: var(--red); border-radius: 2px; }
+
+    .section-label {
+      font-size: 11px; font-weight: 700; color: var(--red);
+      text-transform: uppercase; letter-spacing: 1px;
+      margin: 22px 0 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--gray-100); }
+    .section-label:first-child { margin-top: 0; }
+
+    .form-row { display: flex; gap: 12px; }
+    .form-row .field { flex: 1; }
+    .field { margin-bottom: 14px; }
+
+    label {
+      display: block; font-size: 12px; font-weight: 700;
+      color: var(--gray-600); text-transform: uppercase;
+      letter-spacing: 0.5px; margin-bottom: 6px;
+    }
+    input, select {
+      width: 100%; padding: 12px 13px;
+      border: 1.5px solid var(--gray-200); border-radius: 9px;
+      font-size: 14px; color: var(--gray-800); background: var(--off-white);
+      outline: none; transition: border-color 0.15s, background 0.15s;
+      font-family: var(--font); appearance: none; -webkit-appearance: none;
+    }
+    input:focus, select:focus { border-color: var(--red); background: var(--white); }
+    input::placeholder { color: var(--gray-400); }
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: '▾'; position: absolute; right: 12px; top: 50%;
+      transform: translateY(-50%); color: var(--gray-400);
+      font-size: 12px; pointer-events: none;
+    }
+
+    .msg-box {
+      border-radius: 10px; padding: 11px 14px; font-size: 13px;
+      font-weight: 500; margin-bottom: 16px; display: none;
+      align-items: center; gap: 8px; line-height: 1.4;
+    }
+    .msg-box.error   { background:#FEF2F2; border:1px solid #FECACA; color:#B71C1C; }
+    .msg-box.success { background: var(--success-bg); border:1px solid #A7D7B8; color: var(--success); }
+    .msg-box.show    { display: flex; }
+
+    .submit-btn {
+      width: 100%; padding: 15px; background: var(--red); color: var(--white);
+      border: none; border-radius: 11px; font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: background 0.15s, transform 0.1s;
+      margin-top: 8px; letter-spacing: 0.2px;
+    }
+    .submit-btn:hover:not(:disabled) { background: var(--red-dark); }
+    .submit-btn:active:not(:disabled) { transform: scale(0.99); }
+    .submit-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .footer-links {
+      text-align: center; margin-top: 16px; font-size: 13px; color: var(--gray-400);
+    }
+    .footer-links a { color: var(--red); text-decoration: none; font-weight: 700; }
+    .footer-links a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <div class="page-header">
+    <a href="/" class="back-btn">←</a>
+    <div class="page-header-info">
+      <h2>Driver Registration</h2>
+      <p>Join the LifeLine fleet</p>
+    </div>
+    <div class="header-badge">
+      <div class="cv"></div><div class="ch"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="progress-bar"><div class="progress-fill"></div></div>
+
+    <div class="msg-box error"   id="error-msg"></div>
+    <div class="msg-box success" id="success-msg">✓ Registered successfully! Redirecting…</div>
+
+    <div class="section-label">Personal Information</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Full Name *</label>
+        <input id="name" type="text" placeholder="e.g. Ravi Kumar" />
+      </div>
+      <div class="field">
+        <label>Driver ID *</label>
+        <input id="driver-id" type="text" placeholder="DR001" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Mobile Number *</label>
+        <input id="mobile" type="tel" placeholder="+91 98765 43210" />
+      </div>
+      <div class="field">
+        <label>Email *</label>
+        <input id="email" type="email" placeholder="driver@example.com" />
+      </div>
+    </div>
+
+    <div class="section-label">Vehicle &amp; Licence</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Licence Number *</label>
+        <input id="licence" type="text" placeholder="DL-12345678" />
+      </div>
+      <div class="field">
+        <label>Vehicle Type *</label>
+        <div class="select-wrap">
+          <select id="vehicle">
+            <option value="">Select type</option>
+            <option>Basic Life Support</option>
+            <option>Advanced Life Support</option>
+            <option>Patient Transport</option>
+            <option>Neonatal</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Ambulance Reg. No. *</label>
+        <input id="amb-reg" type="text" placeholder="AMB-2024-001" />
+      </div>
+      <div class="field">
+        <label>Organisation *</label>
+        <input id="org" type="text" placeholder="City Hospital" />
+      </div>
+    </div>
+
+    <div class="section-label">Security</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Password *</label>
+        <input id="password" type="password" placeholder="Min. 6 characters" />
+      </div>
+      <div class="field">
+        <label>Confirm *</label>
+        <input id="confirm" type="password" placeholder="Repeat password" />
+      </div>
+    </div>
+
+    <button class="submit-btn" id="submit-btn" onclick="register()">Create Account</button>
+    <div class="footer-links">Already have an account? <a href="/login">Sign In</a></div>
+  </div>
+
+  <script>
+    
+    function showError(msg) {
+      const el = document.getElementById('error-msg');
+      el.textContent = '⚠ ' + msg;
+      el.classList.add('show');
+    }
+
+    async function register() {
+      document.getElementById('error-msg').classList.remove('show');
+      const fields = {
+        full_name:            document.getElementById('name').value.trim(),
+        driver_id:            document.getElementById('driver-id').value.trim(),
+        mobile:               document.getElementById('mobile').value.trim().replace(/\s+/g, ''),
+        email:                document.getElementById('email').value.trim(),
+        licence_number:       document.getElementById('licence').value.trim(),
+        vehicle_type:         document.getElementById('vehicle').value,
+        ambulance_reg_number: document.getElementById('amb-reg').value.trim(),
+        organisation:         document.getElementById('org').value.trim(),
+        password:             document.getElementById('password').value,
+      };
+      const confirm = document.getElementById('confirm').value;
+
+      for (const [k, v] of Object.entries(fields)) {
+        if (!v) return showError('Please fill all required fields (' + k.replace(/_/g, ' ') + ').');
+      }
+      if (fields.password !== confirm) return showError('Passwords do not match.');
+      if (fields.password.length < 6)  return showError('Password must be at least 6 characters.');
+
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true; btn.textContent = 'Creating account…';
+
+      try {
+        const res = await fetch('/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: 'driver', ...fields })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Registration failed');
+        sessionStorage.setItem('role',   'driver');
+        sessionStorage.setItem('mobile', fields.mobile);
+        sessionStorage.setItem('user',   JSON.stringify(data.user));
+        localStorage.setItem('driver_registered', '1');
+        localStorage.setItem('driver_data', JSON.stringify(data.user));
+        document.getElementById('success-msg').classList.add('show');
+        setTimeout(() => window.location.href = '/driver', 1500);
+      } catch (e) {
+        btn.disabled = false; btn.textContent = 'Create Account';
+        showError(e.message);
+      }
+    }
+  </script>
+</body>
+</html>

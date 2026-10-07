@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LifeLine — Hospital Registration</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --red:       #C62828;
+      --red-dark:  #B71C1C;
+      --navy:      #0D1B2A;
+      --white:     #FFFFFF;
+      --off-white: #F8F9FB;
+      --gray-100:  #E8EAED;
+      --gray-200:  #D1D5DB;
+      --gray-400:  #9CA3AF;
+      --gray-600:  #4B5563;
+      --gray-800:  #1F2937;
+      --success:   #1d984a;
+      --success-bg:#E6F4EC;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--off-white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 0 48px;
+    }
+
+    .page-header {
+      width: 100%;
+      background: var(--navy);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .back-btn {
+      width: 36px; height: 36px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; cursor: pointer;
+      text-decoration: none; color: rgba(255,255,255,0.80);
+      transition: background 0.15s; flex-shrink: 0;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.14); }
+    .page-header-info { flex: 1; }
+    .page-header-info h2 { font-size: 16px; font-weight: 700; color: var(--white); }
+    .page-header-info p  { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 1px; }
+    .header-badge {
+      width: 36px; height: 36px;
+      background: var(--red); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; flex-shrink: 0;
+    }
+    .header-badge .cv, .header-badge .ch {
+      position: absolute; background: #fff; border-radius: 1px;
+    }
+    .header-badge .cv { width: 6px; height: 18px; }
+    .header-badge .ch { width: 18px; height: 6px; }
+
+    .card {
+      background: var(--white);
+      border-radius: 0 0 16px 16px;
+      width: 100%; max-width: 520px;
+      padding: 24px 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    .progress-bar { height: 3px; background: var(--gray-100); border-radius: 2px; margin-bottom: 24px; overflow: hidden; }
+    .progress-fill { height: 100%; width: 100%; background: var(--red); border-radius: 2px; }
+
+    .section-label {
+      font-size: 11px; font-weight: 700; color: var(--red);
+      text-transform: uppercase; letter-spacing: 1px;
+      margin: 22px 0 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--gray-100); }
+    .section-label:first-child { margin-top: 0; }
+
+    .form-row { display: flex; gap: 12px; }
+    .form-row .field { flex: 1; }
+    .field { margin-bottom: 14px; }
+
+    label {
+      display: block; font-size: 12px; font-weight: 700;
+      color: var(--gray-600); text-transform: uppercase;
+      letter-spacing: 0.5px; margin-bottom: 6px;
+    }
+    input, textarea {
+      width: 100%; padding: 12px 13px;
+      border: 1.5px solid var(--gray-200); border-radius: 9px;
+      font-size: 14px; color: var(--gray-800); background: var(--off-white);
+      outline: none; transition: border-color 0.15s, background 0.15s;
+      font-family: var(--font);
+    }
+    input:focus, textarea:focus { border-color: var(--red); background: var(--white); }
+    input::placeholder, textarea::placeholder { color: var(--gray-400); }
+    textarea { resize: vertical; min-height: 72px; }
+
+    .msg-box {
+      border-radius: 10px; padding: 11px 14px; font-size: 13px;
+      font-weight: 500; margin-bottom: 16px; display: none;
+      align-items: center; gap: 8px; line-height: 1.4;
+    }
+    .msg-box.error   { background:#FEF2F2; border:1px solid #FECACA; color:#B71C1C; }
+    .msg-box.success { background: var(--success-bg); border:1px solid #A7D7B8; color: var(--success); }
+    .msg-box.show    { display: flex; }
+
+    .submit-btn {
+      width: 100%; padding: 15px; background: var(--red); color: var(--white);
+      border: none; border-radius: 11px; font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: background 0.15s, transform 0.1s;
+      margin-top: 8px; letter-spacing: 0.2px;
+    }
+    .submit-btn:hover { background: var(--red-dark); }
+    .submit-btn:active { transform: scale(0.99); }
+
+    .footer-links {
+      text-align: center; margin-top: 16px; font-size: 13px; color: var(--gray-400);
+    }
+    .footer-links a { color: var(--red); text-decoration: none; font-weight: 700; }
+    .footer-links a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <div class="page-header">
+    <a href="/" class="back-btn">←</a>
+    <div class="page-header-info">
+      <h2>Hospital Registration</h2>
+      <p>Create an administrator account</p>
+    </div>
+    <div class="header-badge">
+      <div class="cv"></div><div class="ch"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="progress-bar"><div class="progress-fill"></div></div>
+
+    <div class="msg-box error"   id="msg"></div>
+    <div class="msg-box success" id="success-msg">✓ Hospital account created! Redirecting…</div>
+
+    <div class="section-label">Administrator</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Administrator Name *</label>
+        <input id="admin_name" type="text" placeholder="Dr. Anita Mehta" required />
+      </div>
+      <div class="field">
+        <label>Hospital ID *</label>
+        <input id="hospital_id" type="text" placeholder="H001" required />
+      </div>
+    </div>
+
+    <div class="section-label">Hospital Details</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Hospital Name *</label>
+        <input id="hospital_name" type="text" placeholder="City General Hospital" required />
+      </div>
+      <div class="field">
+        <label>Licence Number *</label>
+        <input id="licence_number" type="text" placeholder="HOS-2024-001" required />
+      </div>
+    </div>
+    <div class="field">
+      <label>Address *</label>
+      <textarea id="address" placeholder="123, Main Street, Bangalore, Karnataka" required></textarea>
+    </div>
+
+    <div class="section-label">Contact</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Mobile Number *</label>
+        <input id="mobile" type="tel" placeholder="+91 98765 43210" required />
+      </div>
+      <div class="field">
+        <label>Email *</label>
+        <input id="email" type="email" placeholder="admin@hospital.com" required />
+      </div>
+    </div>
+
+    <div class="section-label">Security</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Password *</label>
+        <input id="password" type="password" placeholder="Min. 6 characters" required />
+      </div>
+      <div class="field">
+        <label>Confirm *</label>
+        <input id="confirm" type="password" placeholder="Repeat password" required />
+      </div>
+    </div>
+
+    <button class="submit-btn" id="submit-btn" onclick="register()">Create Hospital Account</button>
+    <div class="footer-links">Already registered? <a href="/login">Sign In</a></div>
+  </div>
+
+  <script>
+    function show(msg, type='error') {
+      const el = document.getElementById('msg');
+      el.textContent = (type === 'error' ? '⚠ ' : '✓ ') + msg;
+      el.className = 'msg-box ' + type + ' show';
+    }
+
+    async function register() {
+      document.getElementById('msg').classList.remove('show');
+      const password = document.getElementById('password').value;
+      const confirm  = document.getElementById('confirm').value;
+      if (password !== confirm) return show('Passwords do not match.');
+
+      const payload = {
+        role:           'hospital',
+        admin_name:     document.getElementById('admin_name').value.trim(),
+        hospital_id:    document.getElementById('hospital_id').value.trim(),
+        hospital_name:  document.getElementById('hospital_name').value.trim(),
+        mobile:         document.getElementById('mobile').value.trim().replace(/\s+/g,''),
+        email:          document.getElementById('email').value.trim(),
+        licence_number: document.getElementById('licence_number').value.trim(),
+        address:        document.getElementById('address').value.trim(),
+        password
+      };
+
+      for (const [k, v] of Object.entries(payload)) {
+        if (k !== 'role' && !v) return show('Please fill all required fields.');
+      }
+
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true; btn.textContent = 'Creating account…';
+
+      try {
+        const r = await fetch('/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Registration failed');
+        sessionStorage.setItem('role',   'hospital');
+        sessionStorage.setItem('mobile', payload.mobile);
+        sessionStorage.setItem('user',   JSON.stringify(d.user));
+        document.getElementById('success-msg').classList.add('show');
+        setTimeout(() => window.location.href = '/hospital', 1500);
+      } catch (err) {
+        btn.disabled = false; btn.textContent = 'Create Hospital Account';
+        show(err.message);
+      }
+    }
+  </script>
+</body>
+</html>

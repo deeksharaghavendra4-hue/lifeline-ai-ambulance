@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LifeLine — Sign In</title>
+
+  <style>
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --red: #C62828;
+      --red-dark: #B71C1C;
+      --red-deep: #8E0000;
+      --red-light: #FFEBEE;
+      --red-mid: #E57373;
+
+      --navy: #0D1B2A;
+      --navy-mid: #162536;
+
+      --white: #FFFFFF;
+      --off-white: #F8F9FA;
+
+      --gray-100: #ECEEF1;
+      --gray-200: #D5D9DE;
+      --gray-400: #9AA1AA;
+      --gray-600: #4B5563;
+      --gray-800: #1F2937;
+
+      --success: #16803C;
+
+      --font:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
+
+      --shadow-sm:
+        0 1px 3px rgba(0, 0, 0, 0.08),
+        0 1px 2px rgba(0, 0, 0, 0.04);
+
+      --shadow-md:
+        0 4px 12px rgba(0, 0, 0, 0.10),
+        0 2px 6px rgba(0, 0, 0, 0.05);
+
+      --shadow-red:
+        0 4px 16px rgba(198, 40, 40, 0.22);
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: var(--font);
+      background: var(--off-white);
+      color: var(--gray-800);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* =========================================
+       HEADER
+    ========================================= */
+
+    .topbar {
+      width: 100%;
+      height: 72px;
+      background: var(--white);
+      border-bottom: 1px solid var(--gray-100);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6%;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      text-decoration: none;
+      color: var(--navy);
+    }
+
+    .brand-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 11px;
+      background: var(--red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-red);
+      flex-shrink: 0;
+    }
+
+    .brand-logo svg {
+      width: 23px;
+      height: 23px;
+    }
+
+    .brand-name {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    .brand-subtitle {
+      font-size: 10px;
+      color: var(--gray-400);
+      margin-top: 1px;
+      letter-spacing: 0.2px;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--gray-600);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 13px;
+      border-radius: 8px;
+      transition: 0.2s ease;
+    }
+
+    .back-link svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .back-link:hover {
+      color: var(--red);
+      background: var(--red-light);
+    }
+
+    /* =========================================
+       MAIN
+    ========================================= */
+
+    .main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 45px 20px 55px;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 430px;
+    }
+
+    /* =========================================
+       PAGE INTRO
+    ========================================= */
+
+    .intro {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .intro-icon {
+      width: 54px;
+      height: 54px;
+      margin: 0 auto 14px;
+      background: var(--red-light);
+      color: var(--red);
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .intro-icon svg {
+      width: 27px;
+      height: 27px;
+    }
+
+    .intro h1 {
+      font-size: 25px;
+      line-height: 1.2;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.5px;
+    }
+
+    .intro p {
+      margin-top: 7px;
+      font-size: 13px;
+      color: var(--gray-400);
+    }
+
+    /* =========================================
+       CARD
+    ========================================= */
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--gray-100);
+      border-radius: 18px;
+      padding: 28px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .card-heading {
+      margin-bottom: 23px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--navy);
+    }
+
+    .card-subtitle {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--gray-400);
+    }
+
+    /* =========================================
+       ERROR
+    ========================================= */
+
+    .error-box {
+      display: none;
+      align-items: flex-start;
+      gap: 9px;
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: 10px;
+      padding: 11px 13px;
+      margin-bottom: 17px;
+      color: var(--red-dark);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .error-box.show {
+      display: flex;
+    }
+
+    .error-icon {
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .error-icon svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    /* =========================================
+       FORM
+    ========================================= */
+
+    .field {
+      margin-bottom: 17px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--gray-600);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.65px;
+      text-transform: uppercase;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      color: var(--gray-400);
+      pointer-events: none;
+      transition: color 0.2s ease;
+    }
+
+    .input-wrap:focus-within .input-icon {
+      color: var(--red);
+    }
+
+    input,
+    select {
+      width: 100%;
+      height: 47px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 10px;
+      background: var(--off-white);
+      color: var(--gray-800);
+      font-family: var(--font);
+      font-size: 14px;
+      outline: none;
+      transition:
+        border-color 0.2s ease,
+        background 0.2s ease,
+        box-shadow 0.2s ease;
+    }
+
+    input {
+      padding: 0 14px 0 42px;
+    }
+
+    select {
+      padding: 0 40px 0 42px;
+      appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+
+    input::placeholder {
+      color: var(--gray-400);
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--red);
+      background: var(--white);
+      box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.08);
+    }
+
+    .select-arrow {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      color: var(--gray-400);
+      pointer-events: none;
+    }
+
+    /* =========================================
+       BUTTON
+    ========================================= */
+
+    .submit-btn {
+      width: 100%;
+      height: 48px;
+      margin-top: 3px;
+      border: none;
+      border-radius: 10px;
+      background: var(--red);
+      color: var(--white);
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      transition:
+        background 0.2s ease,
+        transform 0.1s ease,
+        box-shadow 0.2s ease;
+    }
+
+    .submit-btn svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      background: var(--red-dark);
+      box-shadow: var(--shadow-red);
+    }
+
+    .submit-btn:active:not(:disabled) {
+      transform: scale(0.99);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* =========================================
+       REGISTER LINK
+    ========================================= */
+
+    .register-area {
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid var(--gray-100);
+      text-align: center;
+      font-size: 13px;
+      color: var(--gray-400);
+    }
+
+    .register-area a {
+      color: var(--red);
+      font-weight: 700;
+      text-decoration: none;
+      margin-left: 3px;
+    }
+
+    .register-area a:hover {
+      text-decoration: underline;
+    }
+
+    /* =========================================
+       SECURITY NOTE
+    ========================================= */
+
+    .security-note {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      margin-top: 18px;
+      color: var(--gray-400);
+      font-size: 11px;
+    }
+
+    .security-note svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* =========================================
+       FOOTER
+    ========================================= */
+
+    .footer {
+      text-align: center;
+      padding: 0 20px 22px;
+      color: var(--gray-400);
+      font-size: 11px;
+    }
+
+    /* =========================================
+       RESPONSIVE
+    ========================================= */
+
+    @media (max-width: 600px) {
+
+      .topbar {
+        height: 64px;
+        padding: 0 18px;
+      }
+
+      .brand-name {
+        font-size: 18px;
+      }
+
+      .brand-subtitle {
+        display: none;
+      }
+
+      .back-link {
+        padding: 8px;
+      }
+
+      .back-link span {
+        display: none;
+      }
+
+      .main {
+        padding: 30px 16px 40px;
+        align-items: flex-start;
+      }
+
+      .login-container {
+        max-width: 100%;
+      }
+
+      .intro {
+        margin-bottom: 20px;
+      }
+
+      .intro h1 {
+        font-size: 22px;
+      }
+
+      .card {
+        padding: 23px 20px 21px;
+        border-radius: 16px;
+      }
+    }
+
+    @media (max-width: 380px) {
+
+      .card {
+        padding: 20px 16px;
+      }
+
+      .brand-logo {
+        width: 38px;
+        height: 38px;
+      }
+
+      .brand-name {
+        font-size: 17px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- =========================================
+       HEADER
+  ========================================== -->
+
+  <header class="topbar">
+
+    <a href="/" class="brand">
+
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24" fill="none"
+             xmlns="http://www.w3.org/2000/svg"
+             aria-hidden="true">
+
+          <path
+            d="M10 3H14V10H21V14H14V21H10V14H3V10H10V3Z"
+            fill="white"
+          />
+
+        </svg>
+      </div>
+
+      <div>
+        <div class="brand-name">LifeLine</div>
+        <div class="brand-subtitle">Emergency Ambulance Service</div>
+      </div>
+
+    </a>
+
+    <a href="/" class="back-link">
+
+      <svg viewBox="0 0 24 24" fill="none"
+           stroke="currentColor"
+           stroke-width="2"
+           stroke-linecap="round"
+           stroke-linejoin="round"
+           aria-hidden="true">
+
+        <path d="M19 12H5" />
+        <path d="M12 19L5 12L12 5" />
+
+      </svg>
+
+      <span>Back</span>
+
+    </a>
+
+  </header>
+
+
+  <!-- =========================================
+       MAIN
+  ========================================== -->
+
+  <main class="main">
+
+    <div class="login-container">
+
+      <!-- Intro -->
+
+      <div class="intro">
+
+        <div class="intro-icon">
+
+          <svg viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="1.8"
+               stroke-linecap="round"
+               stroke-linejoin="round"
+               aria-hidden="true">
+
+            <path d="M15 21H9" />
+            <path d="M12 3V7" />
+            <path d="M5.5 7.5L8.3 10.3" />
+            <path d="M18.5 7.5L15.7 10.3" />
+
+            <path d="M7 14.5C7 11.74 9.24 9.5 12 9.5C14.76 9.5 17 11.74 17 14.5" />
+
+            <path d="M8.5 17H15.5" />
+            <path d="M9.5 19.5H14.5" />
+
+          </svg>
+
+        </div>
+
+        <h1>Welcome Back</h1>
+
+        <p>Sign in to continue to your LifeLine account</p>
+
+      </div>
+
+
+      <!-- Login Card -->
+
+      <div class="card">
+
+        <div class="card-heading">
+
+          <div class="card-title">Sign In</div>
+
+          <div class="card-subtitle">
+            Enter your credentials to continue
+          </div>
+
+        </div>
+
+
+        <!-- Error -->
+
+        <div class="error-box" id="error-box">
+
+          <span class="error-icon">
+
+            <svg viewBox="0 0 24 24"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2"
+                 stroke-linecap="round"
+                 stroke-linejoin="round"
+                 aria-hidden="true">
+
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 8V12" />
+              <path d="M12 16H12.01" />
+
+            </svg>
+
+          </span>
+
+          <span id="error-text"></span>
+
+        </div>
+
+
+        <!-- Role -->
+
+        <div class="field">
+
+          <label for="role">Sign in as</label>
+
+          <div class="input-wrap">
+
+            <svg class="input-icon"
+                 viewBox="0 0 24 24"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="1.8"
+                 stroke-linecap="round"
+                 stroke-linejoin="round"
+                 aria-hidden="true">
+
+              <path d="M20 21V19C20 16.79 18.21 15 16 15H8C5.79 15 4 16.79 4 19V21" />
+              <circle cx="12" cy="7" r="4" />
+
+            </svg>
+
+            <select id="role">
+
+              <option value="patient">Patient</option>
+              <option value="driver">Driver</option>
+              <option value="hospital">Hospital Admin</option>
+
+            </select>
+
+            <svg class="select-arrow"
+                 viewBox="0 0 24 24"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2"
+                 stroke-linecap="round"
+                 stroke-linejoin="round"
+                 aria-hidden="true">
+
+              <path d="M6 9L12 15L18 9" />
+
+            </svg>
+
+          </div>
+
+        </div>
+
+
+        <!-- Mobile -->
+
+        <div class="field">
+
+          <label for="mobile">Mobile Number</label>
+
+          <div class="input-wrap">
+
+            <svg class="input-icon"
+                 viewBox="0 0 24 24"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="1.8"
+                 stroke-linecap="round"
+                 stroke-linejoin="round"
+                 aria-hidden="true">
+
+              <rect x="7" y="2.5" width="10" height="19" rx="2" />
+              <path d="M11 18.5H13" />
+
+            </svg>
+
+            <input
+              id="mobile"
+              type="tel"
+              inputmode="tel"
+              placeholder="+91 98765 43210"
+              autocomplete="tel"
+            />
+
+          </div>
+
+        </div>
+
+
+        <!-- Password -->
+
+        <div class="field">
+
+          <label for="password">Password</label>
+
+          <div class="input-wrap">
+
+            <svg class="input-icon"
+                 viewBox="0 0 24 24"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="1.8"
+                 stroke-linecap="round"
+                 stroke-linejoin="round"
+                 aria-hidden="true">
+
+              <rect x="4" y="10" width="16" height="11" rx="2" />
+              <path d="M8 10V7C8 4.79 9.79 3 12 3C14.21 3 16 4.79 16 7V10" />
+              <circle cx="12" cy="15.5" r="1" />
+
+            </svg>
+
+            <input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+            />
+
+          </div>
+
+        </div>
+
+
+        <!-- Submit -->
+
+        <button
+          class="submit-btn"
+          id="login-btn"
+          type="button"
+        >
+
+          <svg viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="2"
+               stroke-linecap="round"
+               stroke-linejoin="round"
+               aria-hidden="true">
+
+            <path d="M15 3H19C20.1 3 21 3.9 21 5V19C21 20.1 20.1 21 19 21H15" />
+            <path d="M10 17L15 12L10 7" />
+            <path d="M15 12H3" />
+
+          </svg>
+
+          <span>Sign In</span>
+
+        </button>
+
+
+        <!-- Register -->
+
+        <div class="register-area">
+
+          Don't have an account?
+
+          <a id="register-link" href="/">
+            Register
+          </a>
+
+        </div>
+
+      </div>
+
+
+      <!-- Security -->
+
+      <div class="security-note">
+
+        <svg viewBox="0 0 24 24"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="1.8"
+             stroke-linecap="round"
+             stroke-linejoin="round"
+             aria-hidden="true">
+
+          <rect x="5" y="10" width="14" height="11" rx="2" />
+          <path d="M8 10V7C8 4.79 9.79 3 12 3C14.21 3 16 4.79 16 7V10" />
+
+        </svg>
+
+        Secure access to the LifeLine emergency system
+
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <!-- =========================================
+       FOOTER
+  ========================================== -->
+
+  <footer class="footer">
+    LifeLine Emergency Ambulance Service
+  </footer>
+
+
+  <!-- =========================================
+       EXISTING LOGIN JAVASCRIPT
+       FUNCTIONALITY PRESERVED
+  ========================================== -->
+
+  <script>
+
+    (function () {
+
+      try {
+
+        const sel = document.getElementById('role');
+
+        const stored =
+          sessionStorage.getItem('role') ||
+          (
+            localStorage.getItem('patient_registered')
+              ? 'patient'
+              : null
+          );
+
+        if (stored) {
+          sel.value = stored;
+        }
+
+
+        function updateRegisterLink() {
+
+          const r = sel.value;
+
+          document.getElementById('register-link').href =
+            r === 'hospital'
+              ? '/register/hospital'
+              : r === 'driver'
+                ? '/register/driver'
+                : '/register/patient';
+
+        }
+
+
+        sel.addEventListener(
+          'change',
+          updateRegisterLink
+        );
+
+        updateRegisterLink();
+
+
+        const saved =
+          sessionStorage.getItem('mobile') ||
+          (
+            localStorage.getItem('user_data') &&
+            JSON.parse(
+              localStorage.getItem('user_data')
+            ).mobile
+          );
+
+
+        if (saved) {
+
+          document.getElementById('mobile').value =
+            saved;
+
+        }
+
+      } catch (e) {}
+
+    })();
+
+
+    function showError(msg) {
+
+      const box =
+        document.getElementById('error-box');
+
+      document.getElementById('error-text')
+        .textContent = msg;
+
+      box.classList.add('show');
+
+    }
+
+
+    function hideError() {
+
+      document
+        .getElementById('error-box')
+        .classList
+        .remove('show');
+
+    }
+
+
+    async function login() {
+
+      const role =
+        document.getElementById('role').value;
+
+      const mobile =
+        document
+          .getElementById('mobile')
+          .value
+          .trim()
+          .replace(/\s+/g, '');
+
+      const password =
+        document
+          .getElementById('password')
+          .value;
+
+      const btn =
+        document.getElementById('login-btn');
+
+      hideError();
+
+
+      if (!mobile || !password) {
+
+        showError(
+          'Please fill in all fields.'
+        );
+
+        return;
+
+      }
+
+
+      btn.disabled = true;
+
+      btn.innerHTML = `
+        <span>Signing in...</span>
+      `;
+
+
+      try {
+
+        const res =
+          await fetch(
+            '/auth/login',
+            {
+              method: 'POST',
+
+              headers: {
+                'content-type':
+                  'application/json'
+              },
+
+              body: JSON.stringify({
+                role,
+                mobile,
+                password
+              })
+            }
+          );
+
+
+        const data =
+          await res.json();
+
+
+        if (!res.ok) {
+
+          throw new Error(
+            data.error || 'Login failed'
+          );
+
+        }
+
+
+        sessionStorage.setItem(
+          'user',
+          JSON.stringify(data.user)
+        );
+
+        sessionStorage.setItem(
+          'role',
+          role
+        );
+
+        sessionStorage.setItem(
+          'mobile',
+          mobile
+        );
+
+
+        window.location.href =
+          data.redirect ||
+          (
+            role === 'driver'
+              ? '/driver'
+              : role === 'patient'
+                ? '/patient'
+                : '/hospital'
+          );
+
+      }
+
+      catch (e) {
+
+        showError(
+          e.message
+        );
+
+        btn.disabled = false;
+
+        btn.innerHTML = `
+
+          <svg viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="2"
+               stroke-linecap="round"
+               stroke-linejoin="round">
+
+            <path d="M15 3H19C20.1 3 21 3.9 21 5V19C21 20.1 20.1 21 19 21H15" />
+            <path d="M10 17L15 12L10 7" />
+            <path d="M15 12H3" />
+
+          </svg>
+
+          <span>Sign In</span>
+
+        `;
+
+      }
+
+    }
+
+
+    document
+      .getElementById('login-btn')
+      .addEventListener(
+        'click',
+        login
+      );
+
+
+    document.addEventListener(
+      'keydown',
+      e => {
+
+        if (e.key === 'Enter') {
+
+          login();
+
+        }
+
+      }
+    );
+
+  </script>
+
+</body>
+</html>

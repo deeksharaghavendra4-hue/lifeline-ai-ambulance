@@ -1,0 +1,3901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+  />
+
+  <title>Ambulance AI — Request Ambulance</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    /* =========================================================
+       AMBULANCE AI — PATIENT REQUEST PAGE
+       Same design language as Operations Dashboard
+    ========================================================= */
+
+    :root {
+      --red: #C62828;
+      --red-dark: #B71C1C;
+      --red-deep: #8E0000;
+      --red-light: #FFEBEE;
+      --red-mid: #E57373;
+
+      --navy: #0D1B2A;
+      --navy-dark: #071326;
+      --navy-mid: #162536;
+      --navy-card: #1E3042;
+      --navy-line: #2A3E52;
+      --navy-muted: #718096;
+
+      --white: #FFFFFF;
+      --off-white: #F8F9FA;
+      --gray-50: #F5F6F8;
+      --gray-100: #ECEEF1;
+      --gray-200: #D5D9DE;
+      --gray-300: #B6BEC8;
+      --gray-400: #9AA1AA;
+      --gray-500: #718096;
+      --gray-600: #4B5563;
+      --gray-800: #1F2937;
+      --black: #111827;
+
+      --success: #16803C;
+      --success-bg: #EAF7EF;
+      --success-border: #A8D8B8;
+
+      --warning: #B45309;
+      --warning-bg: #FFF7E6;
+
+      --blue: #1D4ED8;
+      --blue-bg: #EFF6FF;
+
+      --font:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
+
+      --shadow-sm:
+        0 1px 3px rgba(0, 0, 0, 0.08),
+        0 1px 2px rgba(0, 0, 0, 0.04);
+
+      --shadow-md:
+        0 4px 12px rgba(0, 0, 0, 0.10),
+        0 2px 6px rgba(0, 0, 0, 0.05);
+
+      --shadow-red:
+        0 4px 16px rgba(198, 40, 40, 0.22);
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 14px;
+      --radius-xl: 18px;
+      --radius-pill: 999px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #F4F6F8;
+      color: var(--gray-800);
+      font-family: var(--font);
+      padding-bottom: 108px;
+    }
+
+    button,
+    textarea {
+      font-family: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* =========================================================
+       TOP NAVIGATION
+    ========================================================= */
+
+    .topbar {
+      height: 68px;
+      background: var(--navy);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      padding: 0 20px;
+
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+    }
+
+    .brand-mark {
+      width: 40px;
+      height: 40px;
+
+      background: var(--red);
+      border-radius: 10px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      color: white;
+
+      box-shadow:
+        0 5px 16px rgba(198,40,40,0.30);
+
+      flex-shrink: 0;
+    }
+
+    .brand-mark svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .brand-name {
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+
+    .brand-role {
+      margin-top: 2px;
+      color: #8D9AAA;
+      font-size: 10px;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+
+      padding: 6px 10px;
+
+      border: 1px solid rgba(22,128,60,0.30);
+      background: rgba(22,128,60,0.08);
+
+      border-radius: 20px;
+
+      color: #77D49A;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+
+      background: #39A963;
+      border-radius: 50%;
+
+      box-shadow:
+        0 0 0 4px rgba(57,169,99,0.12);
+
+      animation: livePulse 1.6s infinite;
+    }
+
+    @keyframes livePulse {
+      0%, 100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.35;
+      }
+    }
+
+    .top-action {
+      width: 36px;
+      height: 36px;
+
+      border-radius: 9px;
+
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.06);
+
+      color: #AEB9C5;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      cursor: pointer;
+
+      transition: 0.2s;
+      position: relative;
+    }
+
+    .top-action:hover {
+      color: white;
+      background: rgba(255,255,255,0.11);
+    }
+
+    .top-action svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    .notification-dot {
+      position: absolute;
+      top: 7px;
+      right: 7px;
+
+      width: 6px;
+      height: 6px;
+
+      background: var(--red);
+      border: 1px solid var(--navy);
+
+      border-radius: 50%;
+    }
+
+    /* =========================================================
+       ACTIVE REQUEST COUNTDOWN
+    ========================================================= */
+
+    #patient-cd-bar {
+      background: var(--navy-dark);
+      color: rgba(255,255,255,0.55);
+
+      font-size: 10px;
+      font-weight: 600;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+
+      padding: 5px 16px;
+
+      position: sticky;
+      top: 68px;
+
+      z-index: 999;
+    }
+
+    /* =========================================================
+       MAIN PAGE
+    ========================================================= */
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+
+      padding: 25px 20px 40px;
+    }
+
+    .page-heading {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+
+      gap: 18px;
+
+      margin-bottom: 20px;
+    }
+
+    .heading-title {
+      color: #17212B;
+
+      font-size: 25px;
+      font-weight: 700;
+
+      letter-spacing: -0.5px;
+    }
+
+    .heading-description {
+      margin-top: 5px;
+
+      color: var(--gray-500);
+
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .refresh-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      color: var(--gray-500);
+      font-size: 11px;
+
+      white-space: nowrap;
+    }
+
+    .refresh-info svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* =========================================================
+       USER GREETING
+    ========================================================= */
+
+    .greeting-card {
+      background: var(--navy);
+      border-radius: var(--radius-lg);
+
+      padding: 18px 19px;
+
+      color: white;
+
+      margin-bottom: 20px;
+
+      box-shadow: var(--shadow-md);
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      gap: 15px;
+    }
+
+    .greeting-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .greeting-icon {
+      width: 42px;
+      height: 42px;
+
+      background: rgba(198,40,40,0.16);
+
+      border: 1px solid rgba(255,255,255,0.08);
+
+      border-radius: 10px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      color: #FF8A8A;
+    }
+
+    .greeting-icon svg {
+      width: 21px;
+      height: 21px;
+    }
+
+    .greeting-title {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .greeting-subtitle {
+      margin-top: 3px;
+
+      color: rgba(255,255,255,0.55);
+
+      font-size: 11px;
+    }
+
+    .system-label {
+      color: #77D49A;
+
+      font-size: 10px;
+      font-weight: 700;
+
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* =========================================================
+       SECTION
+    ========================================================= */
+
+    .section {
+      margin-top: 20px;
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      margin-bottom: 9px;
+    }
+
+    .section-label {
+      color: #718096;
+
+      font-size: 10px;
+      font-weight: 700;
+
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .section-number {
+      color: #9AA1AA;
+
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    /* =========================================================
+       LOCATION CARD
+    ========================================================= */
+
+    .location-card {
+      background: white;
+
+      border: 1px solid #E1E6EB;
+
+      border-radius: var(--radius-lg);
+
+      overflow: hidden;
+
+      box-shadow:
+        0 3px 12px rgba(0,0,0,0.04);
+    }
+
+    .map-container {
+      position: relative;
+    }
+
+    #map {
+      height: 220px;
+      width: 100%;
+    }
+
+    .map-label {
+      position: absolute;
+
+      top: 12px;
+      left: 12px;
+
+      z-index: 500;
+
+      background: rgba(13,27,42,0.90);
+
+      color: white;
+
+      border-radius: 7px;
+
+      padding: 7px 10px;
+
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      font-size: 10px;
+      font-weight: 600;
+
+      box-shadow: var(--shadow-sm);
+    }
+
+    .map-label svg {
+      width: 13px;
+      height: 13px;
+
+      color: #FF7777;
+    }
+
+    .location-footer {
+      min-height: 55px;
+
+      padding: 10px 14px;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      gap: 10px;
+
+      border-top: 1px solid #E7EBEF;
+    }
+
+    .location-left {
+      display: flex;
+      align-items: center;
+
+      gap: 8px;
+
+      min-width: 0;
+    }
+
+    .live-pill {
+      background: var(--success-bg);
+
+      color: var(--success);
+
+      font-size: 10px;
+      font-weight: 700;
+
+      padding: 4px 8px;
+
+      border-radius: var(--radius-pill);
+
+      display: flex;
+      align-items: center;
+      gap: 5px;
+
+      border: 1px solid var(--success-border);
+
+      flex-shrink: 0;
+    }
+
+    .live-pill .live-dot {
+      width: 5px;
+      height: 5px;
+
+      background: var(--success);
+
+      box-shadow: none;
+    }
+
+    #location-text {
+      color: var(--gray-500);
+
+      font-size: 11px;
+
+      max-width: 380px;
+
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .refresh-btn {
+      border: 0;
+      background: transparent;
+
+      color: var(--red);
+
+      font-size: 11px;
+      font-weight: 700;
+
+      padding: 6px 7px;
+
+      cursor: pointer;
+
+      display: flex;
+      align-items: center;
+      gap: 5px;
+
+      flex-shrink: 0;
+    }
+
+    .refresh-btn:hover {
+      background: var(--red-light);
+
+      border-radius: 6px;
+    }
+
+    .refresh-btn svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    /* =========================================================
+       EMERGENCY TYPE
+    ========================================================= */
+
+    .emergency-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+      gap: 11px;
+    }
+
+    .e-card {
+      background: white;
+
+      border: 1px solid #E1E6EB;
+
+      border-radius: 12px;
+
+      padding: 15px 10px 13px;
+
+      display: flex;
+      flex-direction: column;
+
+      align-items: center;
+
+      gap: 9px;
+
+      cursor: pointer;
+
+      user-select: none;
+
+      transition:
+        border-color 0.18s,
+        background 0.18s,
+        transform 0.12s,
+        box-shadow 0.18s;
+
+      box-shadow:
+        0 2px 8px rgba(0,0,0,0.03);
+    }
+
+    .e-card:hover {
+      border-color: var(--red-mid);
+
+      background: #FFF9F9;
+
+      transform: translateY(-1px);
+    }
+
+    .e-card:active {
+      transform: scale(0.98);
+    }
+
+    .e-card.selected {
+      border-color: var(--red);
+
+      background: var(--red-light);
+
+      box-shadow:
+        0 3px 10px rgba(198,40,40,0.10);
+    }
+
+    .e-icon {
+      width: 46px;
+      height: 46px;
+
+      background: var(--gray-50);
+
+      border-radius: 11px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      color: #687585;
+
+      transition: 0.18s;
+    }
+
+    .e-icon svg {
+      width: 23px;
+      height: 23px;
+    }
+
+    .e-card.selected .e-icon {
+      background: #FFDDE0;
+
+      color: var(--red);
+    }
+
+    .e-label {
+      color: var(--gray-600);
+
+      font-size: 11px;
+      font-weight: 700;
+
+      text-align: center;
+
+      line-height: 1.3;
+    }
+
+    .e-card.selected .e-label {
+      color: var(--red-dark);
+    }
+
+    /* =========================================================
+       VOICE DESCRIPTION
+    ========================================================= */
+
+    #voice-section {
+      display: none;
+    }
+
+    #voice-section.visible {
+      display: block;
+    }
+
+    .voice-card {
+      background: white;
+
+      border: 1px solid #E1E6EB;
+
+      border-radius: var(--radius-lg);
+
+      padding: 16px;
+
+      box-shadow:
+        0 3px 12px rgba(0,0,0,0.04);
+    }
+
+    .voice-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      margin-bottom: 13px;
+    }
+
+    .voice-title-area {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .voice-icon {
+      width: 34px;
+      height: 34px;
+
+      background: var(--red-light);
+
+      color: var(--red);
+
+      border-radius: 8px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .voice-icon svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    .voice-title {
+      color: #1F2937;
+
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .voice-subtitle {
+      color: #8995A3;
+
+      font-size: 10px;
+
+      margin-top: 2px;
+    }
+
+    .voice-status-badge {
+      color: #718096;
+
+      background: #F5F6F8;
+
+      border: 1px solid #E1E6EB;
+
+      border-radius: 20px;
+
+      padding: 5px 8px;
+
+      font-size: 9px;
+      font-weight: 600;
+    }
+
+    .mic-row {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+
+      margin-bottom: 10px;
+    }
+
+    #mic-btn {
+      width: 44px;
+      height: 44px;
+
+      background: var(--red);
+
+      border: none;
+
+      border-radius: 50%;
+
+      color: white;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      cursor: pointer;
+
+      flex-shrink: 0;
+
+      box-shadow:
+        0 4px 12px rgba(198,40,40,0.22);
+
+      transition:
+        background 0.15s,
+        transform 0.1s;
+    }
+
+    #mic-btn:hover {
+      background: var(--red-dark);
+    }
+
+    #mic-btn:active {
+      transform: scale(0.96);
+    }
+
+    #mic-btn svg {
+      width: 19px;
+      height: 19px;
+    }
+
+    #mic-btn.recording {
+      animation: micPulse 0.9s infinite;
+    }
+
+    @keyframes micPulse {
+      0%, 100% {
+        box-shadow:
+          0 0 0 0 rgba(198,40,40,0.40);
+      }
+
+      50% {
+        box-shadow:
+          0 0 0 10px rgba(198,40,40,0);
+      }
+    }
+
+    #voice-status {
+      color: var(--gray-500);
+
+      font-size: 11px;
+    }
+
+    #voice-transcript {
+      width: 100%;
+
+      min-height: 68px;
+
+      background: var(--gray-50);
+
+      border: 1px solid var(--gray-200);
+
+      border-radius: 9px;
+
+      padding: 10px 11px;
+
+      color: var(--gray-800);
+
+      font-size: 12px;
+
+      line-height: 1.5;
+
+      resize: vertical;
+
+      outline: none;
+    }
+
+    #voice-transcript:focus {
+      border-color: var(--red);
+
+      background: white;
+    }
+
+    #voice-transcript::placeholder {
+      color: #A2A9B2;
+    }
+
+    /* =========================================================
+       REQUEST BAR
+    ========================================================= */
+
+    .request-bar {
+      position: fixed;
+
+      left: 0;
+      right: 0;
+      bottom: 0;
+
+      background: white;
+
+      border-top: 1px solid #E1E6EB;
+
+      padding: 11px 20px 17px;
+
+      z-index: 900;
+
+      box-shadow:
+        0 -4px 16px rgba(0,0,0,0.06);
+    }
+
+    .request-inner {
+      max-width: 900px;
+
+      margin: 0 auto;
+
+      display: flex;
+      align-items: center;
+
+      gap: 12px;
+    }
+
+    .request-info {
+      flex: 1;
+
+      min-width: 0;
+    }
+
+    .request-info-label {
+      color: #8995A3;
+
+      font-size: 9px;
+      font-weight: 700;
+
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .request-info-value {
+      color: #1F2937;
+
+      font-size: 11px;
+      font-weight: 700;
+
+      margin-top: 2px;
+
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #request-btn {
+      min-width: 230px;
+
+      background: var(--red);
+
+      color: white;
+
+      border: none;
+
+      border-radius: 10px;
+
+      padding: 14px 18px;
+
+      font-size: 13px;
+      font-weight: 700;
+
+      cursor: pointer;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      gap: 8px;
+
+      box-shadow:
+        0 4px 14px rgba(198,40,40,0.20);
+
+      transition:
+        background 0.15s,
+        transform 0.1s,
+        box-shadow 0.15s;
+    }
+
+    #request-btn:hover:not(:disabled) {
+      background: var(--red-dark);
+
+      box-shadow:
+        0 5px 17px rgba(198,40,40,0.25);
+    }
+
+    #request-btn:active:not(:disabled) {
+      transform: scale(0.99);
+    }
+
+    #request-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    #request-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* =========================================================
+       LOADING OVERLAY
+    ========================================================= */
+
+    #loading-overlay {
+      display: none;
+
+      position: fixed;
+
+      inset: 0;
+
+      background: rgba(248,249,250,0.95);
+
+      z-index: 2000;
+
+      flex-direction: column;
+
+      align-items: center;
+      justify-content: center;
+
+      gap: 13px;
+    }
+
+    #loading-overlay.visible {
+      display: flex;
+    }
+
+    .loading-icon {
+      width: 58px;
+      height: 58px;
+
+      background: var(--red-light);
+
+      color: var(--red);
+
+      border-radius: 15px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .loading-icon svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .spinner {
+      position: absolute;
+
+      width: 74px;
+      height: 74px;
+
+      border: 3px solid #F3CDD0;
+
+      border-top-color: var(--red);
+
+      border-radius: 50%;
+
+      animation: spin 0.75s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    #loading-overlay p {
+      margin-top: 8px;
+
+      color: var(--gray-800);
+
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    #loading-overlay small {
+      color: var(--gray-400);
+
+      font-size: 11px;
+    }
+
+    /* =========================================================
+       TOAST
+    ========================================================= */
+
+    #toast {
+      position: fixed;
+
+      bottom: 100px;
+      left: 50%;
+
+      transform:
+        translateX(-50%)
+        translateY(6px);
+
+      background: var(--navy);
+
+      color: white;
+
+      padding: 10px 15px;
+
+      border-radius: 9px;
+
+      font-size: 11px;
+      font-weight: 600;
+
+      opacity: 0;
+
+      transition:
+        opacity 0.25s,
+        transform 0.25s;
+
+      pointer-events: none;
+
+      white-space: nowrap;
+
+      z-index: 3000;
+
+      max-width: calc(100vw - 40px);
+
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #toast.show {
+      opacity: 1;
+
+      transform:
+        translateX(-50%)
+        translateY(0);
+    }
+
+    #toast.error {
+      background: var(--red);
+    }
+
+    #toast.success {
+      background: var(--success);
+    }
+
+    /* =========================================================
+       PROFILE MODAL
+    ========================================================= */
+
+    #profile-modal {
+      display: none;
+
+      position: fixed;
+
+      inset: 0;
+
+      background: rgba(13,27,42,0.58);
+
+      z-index: 2500;
+
+      align-items: flex-end;
+    }
+
+    #profile-modal.visible {
+      display: flex;
+    }
+
+    .profile-sheet {
+      width: 100%;
+
+      max-width: 600px;
+
+      margin: 0 auto;
+
+      background: white;
+
+      border-radius: 19px 19px 0 0;
+
+      padding: 17px 20px 30px;
+
+      box-shadow:
+        0 -8px 30px rgba(0,0,0,0.18);
+    }
+
+    .sheet-handle {
+      width: 36px;
+      height: 4px;
+
+      background: var(--gray-200);
+
+      border-radius: 2px;
+
+      margin: 0 auto 17px;
+    }
+
+    .profile-avatar {
+      width: 56px;
+      height: 56px;
+
+      background: var(--red-light);
+
+      color: var(--red);
+
+      border-radius: 50%;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      margin: 0 auto 9px;
+    }
+
+    .profile-avatar svg {
+      width: 25px;
+      height: 25px;
+    }
+
+    .profile-name {
+      text-align: center;
+
+      color: var(--gray-800);
+
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .profile-mobile {
+      text-align: center;
+
+      color: var(--gray-400);
+
+      font-size: 11px;
+
+      margin-top: 3px;
+    }
+
+    .profile-details {
+      background: var(--gray-50);
+
+      border: 1px solid var(--gray-100);
+
+      border-radius: 11px;
+
+      padding: 3px 14px;
+
+      margin: 15px 0;
+    }
+
+    .profile-row {
+      display: flex;
+
+      align-items: center;
+      justify-content: space-between;
+
+      gap: 20px;
+
+      padding: 10px 0;
+
+      border-bottom: 1px solid var(--gray-100);
+
+      font-size: 12px;
+    }
+
+    .profile-row:last-child {
+      border-bottom: none;
+    }
+
+    .profile-row span:first-child {
+      color: var(--gray-400);
+    }
+
+    .profile-row span:last-child {
+      color: var(--gray-800);
+
+      font-weight: 700;
+
+      text-align: right;
+
+      word-break: break-word;
+    }
+
+    .profile-actions {
+      display: flex;
+      flex-direction: column;
+
+      gap: 8px;
+    }
+
+    .profile-btn {
+      width: 100%;
+
+      padding: 12px;
+
+      border-radius: 10px;
+
+      border: 1px solid var(--gray-100);
+
+      background: white;
+
+      color: var(--gray-800);
+
+      font-size: 12px;
+      font-weight: 700;
+
+      cursor: pointer;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      gap: 8px;
+    }
+
+    .profile-btn:hover {
+      background: var(--gray-50);
+    }
+
+    .profile-btn.logout {
+      color: var(--red);
+
+      border-color: var(--red-mid);
+
+      background: var(--red-light);
+    }
+
+    .profile-btn.logout:hover {
+      background: #FFCDD2;
+    }
+
+    .profile-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* =========================================================
+       LEAFLET CUSTOMIZATION
+    ========================================================= */
+
+    .leaflet-control-zoom {
+      border: none !important;
+
+      box-shadow:
+        0 3px 10px rgba(0,0,0,0.12) !important;
+    }
+
+    .leaflet-control-zoom a {
+      color: var(--navy) !important;
+
+      border: none !important;
+
+      width: 30px !important;
+      height: 30px !important;
+
+      line-height: 30px !important;
+    }
+
+    .leaflet-popup-content-wrapper {
+      border-radius: 9px;
+    }
+
+    .leaflet-popup-content {
+      font-family: var(--font);
+
+      font-size: 11px;
+
+      color: var(--gray-800);
+    }
+
+    /* =========================================================
+       RESPONSIVE
+    ========================================================= */
+
+    @media (max-width: 700px) {
+
+      .topbar {
+        height: 64px;
+
+        padding: 0 15px;
+      }
+
+      .brand-mark {
+        width: 37px;
+        height: 37px;
+      }
+
+      .brand-name {
+        font-size: 15px;
+      }
+
+      .live-indicator {
+        display: none;
+      }
+
+      .page {
+        padding: 20px 15px 30px;
+      }
+
+      .page-heading {
+        align-items: flex-start;
+
+        flex-direction: column;
+
+        gap: 7px;
+
+        margin-bottom: 17px;
+      }
+
+      .heading-title {
+        font-size: 23px;
+      }
+
+      .greeting-card {
+        padding: 15px;
+      }
+
+      .system-label {
+        display: none;
+      }
+
+      #map {
+        height: 195px;
+      }
+
+      .emergency-grid {
+        grid-template-columns:
+          repeat(3, minmax(0, 1fr));
+
+        gap: 8px;
+      }
+
+      .e-card {
+        padding: 12px 7px 11px;
+      }
+
+      .e-icon {
+        width: 42px;
+        height: 42px;
+      }
+
+      .e-icon svg {
+        width: 21px;
+        height: 21px;
+      }
+
+      .e-label {
+        font-size: 10px;
+      }
+
+      .request-inner {
+        display: block;
+      }
+
+      .request-info {
+        display: none;
+      }
+
+      #request-btn {
+        width: 100%;
+
+        min-width: 0;
+      }
+
+      .request-bar {
+        padding:
+          10px
+          15px
+          calc(12px + env(safe-area-inset-bottom));
+      }
+    }
+
+    @media (max-width: 400px) {
+
+      .brand-role {
+        display: none;
+      }
+
+      .emergency-grid {
+        gap: 7px;
+      }
+
+      .e-card {
+        padding-left: 4px;
+        padding-right: 4px;
+      }
+
+      .e-icon {
+        width: 39px;
+        height: 39px;
+      }
+
+      .e-label {
+        font-size: 9px;
+      }
+
+      #location-text {
+        max-width: 150px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- =======================================================
+       TOP NAVIGATION
+  ======================================================== -->
+
+  <header class="topbar">
+
+    <div class="brand">
+
+      <div class="brand-mark">
+
+        <!-- Ambulance SVG -->
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M3 6.5C3 5.67 3.67 5 4.5 5H14L18 9H20C20.55 9 21 9.45 21 10V17H3V6.5Z"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+
+          <path
+            d="M14 5V9H18"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+
+          <path
+            d="M8 9V14M5.5 11.5H10.5"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+          />
+
+          <circle
+            cx="7"
+            cy="17"
+            r="2"
+            stroke="currentColor"
+            stroke-width="1.7"
+          />
+
+          <circle
+            cx="17"
+            cy="17"
+            r="2"
+            stroke="currentColor"
+            stroke-width="1.7"
+          />
+        </svg>
+
+      </div>
+
+      <div>
+        <div class="brand-name">Ambulance AI</div>
+        <div class="brand-role">Emergency Service</div>
+      </div>
+
+    </div>
+
+    <div class="top-actions">
+
+      <div class="live-indicator">
+        <span class="live-dot"></span>
+        SYSTEM LIVE
+      </div>
+
+      <!-- Notifications -->
+      <button
+        class="top-action"
+        type="button"
+        onclick="toggleNotif()"
+        aria-label="Notifications"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M18 9C18 5.69 15.31 3 12 3C8.69 3 6 5.69 6 9C6 14 4 15.5 4 17H20C20 15.5 18 14 18 9Z"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+
+          <path
+            d="M10 20H14"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+          />
+        </svg>
+
+        <span class="notification-dot"></span>
+      </button>
+
+      <!-- Profile -->
+      <button
+        class="top-action"
+        type="button"
+        onclick="openProfile()"
+        aria-label="Profile"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle
+            cx="12"
+            cy="8"
+            r="3.5"
+            stroke="currentColor"
+            stroke-width="1.7"
+          />
+
+          <path
+            d="M5 20C5.8 16.5 8.2 14.5 12 14.5C15.8 14.5 18.2 16.5 19 20"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <!-- =======================================================
+       MAIN
+  ======================================================== -->
+
+  <main class="page">
+
+    <!-- Page heading -->
+
+    <div class="page-heading">
+
+      <div>
+        <h1 class="heading-title">
+          Request Emergency Assistance
+        </h1>
+
+        <p class="heading-description">
+          Share your location, select the emergency type and request the nearest available ambulance.
+        </p>
+      </div>
+
+      <div class="refresh-info">
+
+        <!-- Refresh SVG -->
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M20 11A8.1 8.1 0 0 0 5.4 6.2L4 8"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+
+          <path
+            d="M4 4V8H8"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+
+          <path
+            d="M4 13A8.1 8.1 0 0 0 18.6 17.8L20 16"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+
+          <path
+            d="M20 20V16H16"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+
+        Live location enabled
+      </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         GREETING
+    ====================================================== -->
+
+    <section class="greeting-card">
+
+      <div class="greeting-left">
+
+        <div class="greeting-icon">
+
+          <!-- User SVG -->
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle
+              cx="12"
+              cy="8"
+              r="3.5"
+              stroke="currentColor"
+              stroke-width="1.7"
+            />
+
+            <path
+              d="M5 20C5.8 16.5 8.2 14.5 12 14.5C15.8 14.5 18.2 16.5 19 20"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+            />
+          </svg>
+
+        </div>
+
+        <div>
+          <div
+            class="greeting-title"
+            id="greeting-text"
+          >
+            Hello, User
+          </div>
+
+          <div class="greeting-subtitle">
+            Select the emergency details below to continue.
+          </div>
+        </div>
+
+      </div>
+
+      <div class="system-label">
+        <span class="live-dot"></span>
+        Service available
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         LOCATION
+    ====================================================== -->
+
+    <section class="section">
+
+      <div class="section-heading">
+
+        <div class="section-label">
+          Your Location
+        </div>
+
+        <div class="section-number">
+          STEP 01
+        </div>
+
+      </div>
+
+      <div class="location-card">
+
+        <div class="map-container">
+
+          <div class="map-label">
+
+            <!-- Location SVG -->
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 10C20 15.5 12 21 12 21C12 21 4 15.5 4 10C4 5.58 7.58 2 12 2C16.42 2 20 5.58 20 10Z"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linejoin="round"
+              />
+
+              <circle
+                cx="12"
+                cy="10"
+                r="2.5"
+                stroke="currentColor"
+                stroke-width="1.7"
+              />
+            </svg>
+
+            Current location
+          </div>
+
+          <div id="map"></div>
+
+        </div>
+
+        <div class="location-footer">
+
+          <div class="location-left">
+
+            <div class="live-pill">
+              <span class="live-dot"></span>
+              LIVE
+            </div>
+
+            <span id="location-text">
+              Fetching location...
+            </span>
+
+          </div>
+
+          <button
+            class="refresh-btn"
+            type="button"
+            onclick="getLocation()"
+          >
+
+            <!-- Refresh SVG -->
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 11A8.1 8.1 0 0 0 5.4 6.2L4 8"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+
+              <path
+                d="M4 4V8H8"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+
+              <path
+                d="M4 13A8.1 8.1 0 0 0 18.6 17.8L20 16"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+
+              <path
+                d="M20 20V16H16"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+
+            Refresh
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         EMERGENCY TYPE
+    ====================================================== -->
+
+    <section class="section">
+
+      <div class="section-heading">
+
+        <div class="section-label">
+          Emergency Type
+        </div>
+
+        <div class="section-number">
+          STEP 02
+        </div>
+
+      </div>
+
+      <div class="emergency-grid">
+
+        <!-- Accident -->
+        <div
+          class="e-card"
+          data-type="Accident"
+          onclick="selectEmergency(this)"
+        >
+          <div class="e-icon">
+
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M5 15L6.5 9.5C6.8 8.4 7.8 7.5 9 7.5H15C16.2 7.5 17.2 8.4 17.5 9.5L19 15"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+
+              <path
+                d="M4 15H20V19H4V15Z"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linejoin="round"
+              />
+
+              <circle
+                cx="7"
+                cy="19"
+                r="1.5"
+                stroke="currentColor"
+                stroke-width="1.7"
+              />
+
+              <circle
+                cx="17"
+                cy="19"
+                r="1.5"
+                stroke="currentColor"
+                stroke-width="1.7"
+              />
+            </svg>
+
+          </div>
+
+          <div class="e-label">
+            Accident
+          </div>
+        </div>
+
+
+        <!-- Heart Attack -->
+        <div
+          class="e-card"
+          data-type="Heart Attack"
+          onclick="selectEmergency(this)"
+        >
+          <div class="e-icon">
+
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20.8 8.8C20.8 13.5 12 20 12 20C12 20 3.2 13.5 3.2 8.8C3.2 5.8 5.3 3.7 8.1 3.7C9.8 3.7 11.3 4.5 12 5.8C12.7 4.5 14.2 3.7 15.9 3.7C18.7 3.7 20.8 5.8 20.8 8.8Z"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linejoin="round"
+              />
+
+              <path
+                d="M8 12H10L11 9L13 15L14 12H16"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+
+          </div>
+
+          <div class="e-label">
+            Heart Attack
+          </div>
+        </div>
+
+
+        <!-- Pregnancy -->
+        <div
+          class="e-card"
+          data-type="Pregnancy Emergency"
+          onclick="selectEmergency(this)"
+        >
+          <div class="e-icon">
+
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle
+                cx="10"
+                cy="6"
+                r="2.5"
+                stroke="currentColor"
+                stroke-width="1.7"
+              />
+
+              <path
+                d="M8 9C6.5 10.5 6 13 6.5 15.5L7.5 20"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+              />
+
+              <path
+                d="M12 9C14 9.5 15 11 15 13V16"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+              />
+
+              <path
+                d="M15 13C18 13 19.5 15 19.5 17.5C19.5 19.5 18 21 16 21"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+              />
+
+              <path
+                d="M10 13L12 17L9 20"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+
+          </div>
+
+          <div class="e-label">
+            Pregnancy
+          </div>
+        </div>
+
+
+        <!-- Injury -->
+        <div
+          class="e-card"
+          data-type="Injury"
+          onclick="selectEmergency(this)"
+        >
+          <div class="e-icon">
+
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M9 5L19 15"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+              />
+
+              <path
+                d="M5 9L15 19"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+              />
+
+              <path
+                d="M7 3L21 17"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                opacity="0.45"
+              />
+            </svg>
+
+          </div>
+
+          <div class="e-label">
+            Injury
+          </div>
+        </div>
+
+
+        <!-- Fire / Disaster -->
+        <div
+          class="e-card"
+          data-type="Fire / Disaster"
+          onclick="selectEmergency(this)"
+        >
+          <div class="e-icon">
+
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 21C16.4 21 19 18.2 19 14.5C19 10.5 16.3 8.3 14.5 5C14 7.5 12.8 8.8 11.4 10C11.3 7.5 10.1 5.7 8.3 4C8.5 7.5 5 10 5 14.5C5 18.2 7.6 21 12 21Z"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+
+              <path
+                d="M12 21C14 21 15.5 19.7 15.5 17.9C15.5 15.9 14.1 14.8 13.2 13.3C12.8 14.5 12.1 15.1 11.4 15.7C11.3 14.5 10.8 13.6 10.2 13C10.3 15 8.8 16 8.8 17.9C8.8 19.7 10.1 21 12 21Z"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linejoin="round"
+              />
+            </svg>
+
+          </div>
+
+          <div class="e-label">
+            Fire / Disaster
+          </div>
+        </div>
+
+
+        <!-- Other -->
+        <div
+          class="e-card"
+          data-type="Other"
+          onclick="selectEmergency(this)"
+        >
+          <div class="e-icon">
+
+            <!-- Microphone SVG -->
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <rect
+                x="8"
+                y="3"
+                width="8"
+                height="12"
+                rx="4"
+                stroke="currentColor"
+                stroke-width="1.7"
+              />
+
+              <path
+                d="M5 11C5 14.87 8.13 18 12 18C15.87 18 19 14.87 19 11"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+              />
+
+              <path
+                d="M12 18V21"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+              />
+
+              <path
+                d="M9 21H15"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+              />
+            </svg>
+
+          </div>
+
+          <div class="e-label">
+            Other
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         VOICE DESCRIPTION
+    ====================================================== -->
+
+    <section class="section">
+
+      <div id="voice-section">
+
+        <div class="voice-card">
+
+          <div class="voice-header">
+
+            <div class="voice-title-area">
+
+              <div class="voice-icon">
+
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect
+                    x="8"
+                    y="3"
+                    width="8"
+                    height="12"
+                    rx="4"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                  />
+
+                  <path
+                    d="M5 11C5 14.87 8.13 18 12 18C15.87 18 19 14.87 19 11"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                  />
+
+                  <path
+                    d="M12 18V21"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                  />
+
+                  <path
+                    d="M9 21H15"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                  />
+                </svg>
+
+              </div>
+
+              <div>
+                <div class="voice-title">
+                  Describe the Emergency
+                </div>
+
+                <div class="voice-subtitle">
+                  Provide additional information for the response team
+                </div>
+              </div>
+
+            </div>
+
+            <div class="voice-status-badge">
+              OPTIONAL
+            </div>
+
+          </div>
+
+
+          <div class="mic-row">
+
+            <!-- Existing working voice button -->
+            <button
+              id="mic-btn"
+              type="button"
+              onclick="toggleMic()"
+              aria-label="Start voice recording"
+            >
+
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect
+                  x="8"
+                  y="3"
+                  width="8"
+                  height="12"
+                  rx="4"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                />
+
+                <path
+                  d="M5 11C5 14.87 8.13 18 12 18C15.87 18 19 14.87 19 11"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+
+                <path
+                  d="M12 18V21"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+
+                <path
+                  d="M9 21H15"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+              </svg>
+
+            </button>
+
+            <span id="voice-status">
+              Tap the microphone to describe the emergency
+            </span>
+
+          </div>
+
+
+          <textarea
+            id="voice-transcript"
+            placeholder="Your description will appear here, or type manually..."
+          ></textarea>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- =======================================================
+       REQUEST BAR
+  ======================================================== -->
+
+  <div class="request-bar">
+
+    <div class="request-inner">
+
+      <div class="request-info">
+
+        <div class="request-info-label">
+          Dispatch status
+        </div>
+
+        <div
+          class="request-info-value"
+          id="request-summary"
+        >
+          Select an emergency type
+        </div>
+
+      </div>
+
+
+      <button
+        id="request-btn"
+        type="button"
+        onclick="requestAmbulance()"
+      >
+
+        <!-- Ambulance SVG -->
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M3 6.5C3 5.67 3.67 5 4.5 5H14L18 9H20C20.55 9 21 9.45 21 10V17H3V6.5Z"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+
+          <path
+            d="M8 9V14M5.5 11.5H10.5"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+
+          <circle
+            cx="7"
+            cy="17"
+            r="2"
+            stroke="currentColor"
+            stroke-width="1.8"
+          />
+
+          <circle
+            cx="17"
+            cy="17"
+            r="2"
+            stroke="currentColor"
+            stroke-width="1.8"
+          />
+        </svg>
+
+        Request Ambulance
+
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- =======================================================
+       LOADING OVERLAY
+  ======================================================== -->
+
+  <div id="loading-overlay">
+
+    <div class="loading-icon">
+
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M3 6.5C3 5.67 3.67 5 4.5 5H14L18 9H20C20.55 9 21 9.45 21 10V17H3V6.5Z"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+
+        <path
+          d="M8 9V14M5.5 11.5H10.5"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+        />
+
+        <circle
+          cx="7"
+          cy="17"
+          r="2"
+          stroke="currentColor"
+          stroke-width="1.8"
+        />
+
+        <circle
+          cx="17"
+          cy="17"
+          r="2"
+          stroke="currentColor"
+          stroke-width="1.8"
+        />
+      </svg>
+
+      <div class="spinner"></div>
+
+    </div>
+
+    <p>Finding nearest ambulance...</p>
+
+    <small>
+      Please stay on the page while we process your request.
+    </small>
+
+  </div>
+
+
+  <!-- =======================================================
+       TOAST
+  ======================================================== -->
+
+  <div id="toast"></div>
+
+
+  <!-- =======================================================
+       PROFILE MODAL
+  ======================================================== -->
+
+  <div
+    id="profile-modal"
+    onclick="closeProfile(event)"
+  >
+
+    <div class="profile-sheet">
+
+      <div class="sheet-handle"></div>
+
+
+      <div class="profile-avatar">
+
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle
+            cx="12"
+            cy="8"
+            r="3.5"
+            stroke="currentColor"
+            stroke-width="1.7"
+          />
+
+          <path
+            d="M5 20C5.8 16.5 8.2 14.5 12 14.5C15.8 14.5 18.2 16.5 19 20"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+          />
+        </svg>
+
+      </div>
+
+
+      <div
+        class="profile-name"
+        id="profile-name"
+      >
+        —
+      </div>
+
+      <div
+        class="profile-mobile"
+        id="profile-mobile"
+      >
+        —
+      </div>
+
+
+      <div
+        class="profile-details"
+        id="profile-details"
+      ></div>
+
+
+      <div class="profile-actions">
+
+        <button
+          class="profile-btn logout"
+          type="button"
+          onclick="logout()"
+        >
+
+          <!-- Logout SVG -->
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M13 5H20V19H13"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+
+            <path
+              d="M4 12H16"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+
+            <path
+              d="M12 8L16 12L12 16"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+
+          Sign Out
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =======================================================
+       JAVASCRIPT
+  ======================================================== -->
+
+  <script>
+
+    /* =====================================================
+       STATE
+    ====================================================== */
+
+    let currentLat = null;
+    let currentLon = null;
+
+    let selectedEmergency = null;
+
+    let map = null;
+    let marker = null;
+
+    let recognition = null;
+    let isRecording = false;
+
+
+    /* =====================================================
+       USER SESSION
+    ====================================================== */
+
+    const user =
+      JSON.parse(
+        sessionStorage.getItem("user") ||
+        localStorage.getItem("user_data") ||
+        "null"
+      ) || {};
+
+    const role =
+      sessionStorage.getItem("role") ||
+      (
+        localStorage.getItem("patient_registered")
+          ? "patient"
+          : null
+      );
+
+
+    if (!role || !user.mobile) {
+      window.location.href = "/login";
+    }
+
+
+    const name =
+      user.full_name || "User";
+
+
+    /* =====================================================
+       USER INFORMATION
+    ====================================================== */
+
+    document.getElementById("greeting-text").textContent =
+      "Hello, " + name.split(" ")[0];
+
+
+    document.getElementById("profile-name").textContent =
+      name;
+
+
+    document.getElementById("profile-mobile").textContent =
+      user.mobile || "";
+
+
+    const details = [
+      ["Age", user.age || "—"],
+      ["Gender", user.gender || "—"],
+      ["Blood Group", user.blood_group || "—"],
+      ["Email", user.email || "—"]
+    ];
+
+
+    document.getElementById("profile-details").innerHTML =
+      details
+        .map(
+          ([key, value]) => `
+            <div class="profile-row">
+              <span>${key}</span>
+              <span>${value}</span>
+            </div>
+          `
+        )
+        .join("");
+
+
+    /* =====================================================
+       MAP
+    ====================================================== */
+
+    function initMap(lat, lon) {
+
+      if (!map) {
+
+        map =
+          L.map(
+            "map",
+            {
+              zoomControl: true,
+              attributionControl: false
+            }
+          ).setView(
+            [lat, lon],
+            15
+          );
+
+
+        L.tileLayer(
+          "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        ).addTo(map);
+
+      } else {
+
+        map.setView(
+          [lat, lon],
+          15
+        );
+
+      }
+
+
+      const icon =
+        L.divIcon({
+
+          html: `
+            <div
+              style="
+                width:16px;
+                height:16px;
+                background:#C62828;
+                border-radius:50%;
+                border:3px solid #FFFFFF;
+                box-shadow:
+                  0 2px 9px rgba(198,40,40,.55);
+              "
+            ></div>
+          `,
+
+          iconSize: [16, 16],
+
+          iconAnchor: [8, 8],
+
+          className: ""
+
+        });
+
+
+      if (marker) {
+        marker.remove();
+      }
+
+
+      marker =
+        L.marker(
+          [lat, lon],
+          { icon }
+        )
+        .addTo(map)
+        .bindPopup(
+          "Your current location"
+        )
+        .openPopup();
+
+    }
+
+
+    /* =====================================================
+       GET LOCATION
+    ====================================================== */
+
+    function getLocation() {
+
+      document.getElementById(
+        "location-text"
+      ).textContent =
+        "Fetching location...";
+
+
+      if (!navigator.geolocation) {
+
+        showToast(
+          "Geolocation is not supported",
+          "error"
+        );
+
+        return;
+      }
+
+
+      navigator.geolocation.getCurrentPosition(
+
+        position => {
+
+          currentLat =
+            position.coords.latitude;
+
+          currentLon =
+            position.coords.longitude;
+
+
+          initMap(
+            currentLat,
+            currentLon
+          );
+
+
+          fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${currentLat}&lon=${currentLon}&format=json`
+          )
+
+            .then(
+              response =>
+                response.json()
+            )
+
+            .then(
+              data => {
+
+                const address =
+                  data.address || {};
+
+
+                const label =
+                  [
+                    address.road,
+                    address.suburb,
+                    address.city ||
+                    address.town ||
+                    address.village
+                  ]
+                  .filter(Boolean)
+                  .join(", ");
+
+
+                document.getElementById(
+                  "location-text"
+                ).textContent =
+                  label ||
+                  `${currentLat.toFixed(4)}, ${currentLon.toFixed(4)}`;
+
+              }
+            )
+
+            .catch(
+              () => {
+
+                document.getElementById(
+                  "location-text"
+                ).textContent =
+                  `${currentLat.toFixed(4)}, ${currentLon.toFixed(4)}`;
+
+              }
+            );
+
+        },
+
+        () => {
+
+          showToast(
+            "Location access denied. Please enable GPS.",
+            "error"
+          );
+
+
+          document.getElementById(
+            "location-text"
+          ).textContent =
+            "Location unavailable";
+
+        },
+
+        {
+          enableHighAccuracy: true,
+          timeout: 10000
+        }
+
+      );
+
+    }
+
+
+    /* =====================================================
+       EMERGENCY SELECTION
+    ====================================================== */
+
+    function selectEmergency(card) {
+
+      document
+        .querySelectorAll(".e-card")
+        .forEach(
+          c =>
+            c.classList.remove("selected")
+        );
+
+
+      card.classList.add("selected");
+
+
+      selectedEmergency =
+        card.dataset.type;
+
+
+      document.getElementById(
+        "request-summary"
+      ).textContent =
+        selectedEmergency;
+
+
+      const voiceSection =
+        document.getElementById(
+          "voice-section"
+        );
+
+
+      if (
+        selectedEmergency === "Other"
+      ) {
+
+        voiceSection.classList.add(
+          "visible"
+        );
+
+      } else {
+
+        voiceSection.classList.remove(
+          "visible"
+        );
+
+        stopMic();
+
+      }
+
+    }
+
+
+    /* =====================================================
+       VOICE RECOGNITION
+    ====================================================== */
+
+    function toggleMic() {
+
+      if (isRecording) {
+
+        stopMic();
+
+        return;
+      }
+
+
+      const SpeechRecognition =
+        window.SpeechRecognition ||
+        window.webkitSpeechRecognition;
+
+
+      if (!SpeechRecognition) {
+
+        showToast(
+          "Speech recognition is not supported",
+          "error"
+        );
+
+        return;
+      }
+
+
+      recognition =
+        new SpeechRecognition();
+
+
+      recognition.continuous = false;
+
+      recognition.interimResults = true;
+
+      recognition.lang = "en-IN";
+
+
+      recognition.onstart = () => {
+
+        isRecording = true;
+
+
+        document
+          .getElementById("mic-btn")
+          .classList.add(
+            "recording"
+          );
+
+
+        document.getElementById(
+          "mic-btn"
+        ).innerHTML = `
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect
+              x="7"
+              y="7"
+              width="10"
+              height="10"
+              rx="2"
+              stroke="currentColor"
+              stroke-width="1.8"
+            />
+          </svg>
+        `;
+
+
+        document.getElementById(
+          "voice-status"
+        ).textContent =
+          "Listening...";
+      };
+
+
+      recognition.onresult = event => {
+
+        let transcript = "";
+
+
+        for (
+          let i = 0;
+          i < event.results.length;
+          i++
+        ) {
+
+          transcript +=
+            event.results[i][0].transcript;
+
+        }
+
+
+        document.getElementById(
+          "voice-transcript"
+        ).value =
+          transcript.trim();
+
+      };
+
+
+      recognition.onerror = event => {
+
+        stopMic();
+
+
+        showToast(
+          "Microphone error: " +
+          (
+            event.error ||
+            "allow microphone access"
+          ),
+          "error"
+        );
+
+      };
+
+
+      recognition.onend = () => {
+
+        if (isRecording) {
+          stopMic();
+        }
+
+      };
+
+
+      recognition.start();
+
+    }
+
+
+    /* =====================================================
+       STOP MICROPHONE
+    ====================================================== */
+
+    function stopMic() {
+
+      if (recognition) {
+
+        try {
+          recognition.stop();
+        } catch (error) {}
+
+      }
+
+
+      isRecording = false;
+
+
+      document
+        .getElementById("mic-btn")
+        .classList.remove(
+          "recording"
+        );
+
+
+      document.getElementById(
+        "mic-btn"
+      ).innerHTML = `
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <rect
+            x="8"
+            y="3"
+            width="8"
+            height="12"
+            rx="4"
+            stroke="currentColor"
+            stroke-width="1.8"
+          />
+
+          <path
+            d="M5 11C5 14.87 8.13 18 12 18C15.87 18 19 14.87 19 11"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+
+          <path
+            d="M12 18V21"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+
+          <path
+            d="M9 21H15"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+        </svg>
+      `;
+
+
+      document.getElementById(
+        "voice-status"
+      ).textContent =
+        "Tap the microphone to describe the emergency";
+
+    }
+
+
+    /* =====================================================
+       REQUEST AMBULANCE
+    ====================================================== */
+
+    async function requestAmbulance() {
+
+      if (
+        currentLat === null ||
+        currentLon === null
+      ) {
+
+        showToast(
+          "Location not available. Tap Refresh.",
+          "error"
+        );
+
+        return;
+      }
+
+
+      if (!selectedEmergency) {
+
+        showToast(
+          "Please select an emergency type.",
+          "error"
+        );
+
+        return;
+      }
+
+
+      const voiceText =
+        document
+          .getElementById(
+            "voice-transcript"
+          )
+          .value
+          .trim();
+
+
+      const btn =
+        document.getElementById(
+          "request-btn"
+        );
+
+
+      btn.disabled = true;
+
+
+      btn.innerHTML = `
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 3V7"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+
+          <path
+            d="M12 17V21"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+
+          <path
+            d="M3 12H7"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+
+          <path
+            d="M17 12H21"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+
+          <path
+            d="M5.64 5.64L8.47 8.47"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+
+          <path
+            d="M15.53 15.53L18.36 18.36"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+
+          <path
+            d="M18.36 5.64L15.53 8.47"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+
+          <path
+            d="M8.47 15.53L5.64 18.36"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+        </svg>
+
+        Sending request...
+      `;
+
+
+      try {
+
+        const response =
+          await fetch(
+            "/api/request-ambulance",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body:
+                JSON.stringify({
+
+                  patient_id:
+                    user.mobile ||
+                    "UNKNOWN",
+
+                  patient_name:
+                    name,
+
+                  age:
+                    user.age,
+
+                  gender:
+                    user.gender,
+
+                  blood_group:
+                    user.blood_group,
+
+                  mobile:
+                    user.mobile,
+
+                  latitude:
+                    currentLat,
+
+                  longitude:
+                    currentLon,
+
+                  emergency_type:
+                    selectedEmergency,
+
+                  voice_description:
+                    voiceText
+
+                })
+            }
+          );
+
+
+        const data =
+          await response.json();
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            data.error ||
+            "Request failed"
+          );
+
+        }
+
+
+        sessionStorage.setItem(
+          "active_request",
+          JSON.stringify({
+
+            ...data,
+
+            request_id:
+              data.request_id,
+
+            status:
+              data.status ||
+              "pending"
+
+          })
+        );
+
+
+        sessionStorage.removeItem(
+          "just_cancelled"
+        );
+
+
+        window.location.replace(
+          "/tracking"
+        );
+
+      }
+
+      catch (error) {
+
+        btn.disabled = false;
+
+
+        btn.innerHTML = `
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M3 6.5C3 5.67 3.67 5 4.5 5H14L18 9H20C20.55 9 21 9.45 21 10V17H3V6.5Z"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+
+            <path
+              d="M8 9V14M5.5 11.5H10.5"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+
+            <circle
+              cx="7"
+              cy="17"
+              r="2"
+              stroke="currentColor"
+              stroke-width="1.8"
+            />
+
+            <circle
+              cx="17"
+              cy="17"
+              r="2"
+              stroke="currentColor"
+              stroke-width="1.8"
+            />
+          </svg>
+
+          Request Ambulance
+        `;
+
+
+        showToast(
+          error.message,
+          "error"
+        );
+
+      }
+
+    }
+
+
+    /* =====================================================
+       LOADING
+    ====================================================== */
+
+    function showLoading(show) {
+
+      document
+        .getElementById(
+          "loading-overlay"
+        )
+        .classList.toggle(
+          "visible",
+          show
+        );
+
+
+      document
+        .getElementById(
+          "request-btn"
+        )
+        .disabled = show;
+
+    }
+
+
+    /* =====================================================
+       TOAST
+    ====================================================== */
+
+    let toastTimer;
+
+
+    function showToast(
+      message,
+      type = ""
+    ) {
+
+      const toast =
+        document.getElementById(
+          "toast"
+        );
+
+
+      toast.textContent =
+        message;
+
+
+      toast.className =
+        "show " + type;
+
+
+      clearTimeout(
+        toastTimer
+      );
+
+
+      toastTimer =
+        setTimeout(
+          () => {
+            toast.className = "";
+          },
+          3000
+        );
+
+    }
+
+
+    /* =====================================================
+       PROFILE
+    ====================================================== */
+
+    function openProfile() {
+
+      document
+        .getElementById(
+          "profile-modal"
+        )
+        .classList.add(
+          "visible"
+        );
+
+    }
+
+
+    function closeProfile(event) {
+
+      if (
+        event.target ===
+        document.getElementById(
+          "profile-modal"
+        )
+      ) {
+
+        document
+          .getElementById(
+            "profile-modal"
+          )
+          .classList.remove(
+            "visible"
+          );
+
+      }
+
+    }
+
+
+    /* =====================================================
+       NOTIFICATIONS
+    ====================================================== */
+
+    function toggleNotif() {
+
+      showToast(
+        "No new notifications"
+      );
+
+    }
+
+
+    /* =====================================================
+       LOGOUT
+    ====================================================== */
+
+    function logout() {
+
+      sessionStorage.clear();
+
+      localStorage.removeItem(
+        "patient_registered"
+      );
+
+      localStorage.removeItem(
+        "user_data"
+      );
+
+      window.location.href = "/";
+
+    }
+
+
+    /* =====================================================
+       INITIAL LOCATION
+    ====================================================== */
+
+    getLocation();
+
+
+    /* =====================================================
+       ACTIVE REQUEST DETECTION
+    ====================================================== */
+
+    const PATIENT_REFRESH_MS =
+      10000;
+
+
+    async function checkActiveRequest() {
+
+      if (!user.mobile) {
+        return;
+      }
+
+
+      if (
+        sessionStorage.getItem(
+          "just_cancelled"
+        ) ||
+        sessionStorage.getItem(
+          "just_went_back"
+        )
+      ) {
+
+        sessionStorage.removeItem(
+          "just_cancelled"
+        );
+
+        sessionStorage.removeItem(
+          "just_went_back"
+        );
+
+        return;
+      }
+
+
+      try {
+
+        const response =
+          await fetch(
+            `/api/patient/my-requests?mobile=${encodeURIComponent(user.mobile)}`
+          );
+
+
+        if (!response.ok) {
+          return;
+        }
+
+
+        const data =
+          await response.json();
+
+
+        const live =
+          (
+            data.requests ||
+            []
+          ).find(
+            request =>
+              [
+                "pending",
+                "active",
+                "accepted",
+                "en_route",
+                "arrived",
+                "picked_up"
+              ].includes(
+                request.status
+              )
+          );
+
+
+        if (!live) {
+          return;
+        }
+
+
+        const detail =
+          await fetch(
+            `/api/patient/request-status/${encodeURIComponent(live.id)}`
+          );
+
+
+        if (!detail.ok) {
+          return;
+        }
+
+
+        const fresh =
+          await detail.json();
+
+
+        if (
+          [
+            "cancelled",
+            "completed"
+          ].includes(
+            fresh.status
+          )
+        ) {
+
+          return;
+        }
+
+
+        fresh.request_id =
+          fresh.request_id ||
+          live.id;
+
+
+        sessionStorage.setItem(
+          "active_request",
+          JSON.stringify(
+            fresh
+          )
+        );
+
+
+        window.location.replace(
+          "/tracking"
+        );
+
+      }
+
+      catch (error) {
+
+        /* Silent failure.
+           Existing request polling should
+           not interrupt the patient UI. */
+
+      }
+
+    }
+
+
+    /* =====================================================
+       COUNTDOWN BAR
+    ====================================================== */
+
+    function renderPatientCountdown() {
+
+      if (
+        document.getElementById(
+          "patient-cd-bar"
+        )
+      ) {
+
+        return;
+      }
+
+
+      const bar =
+        document.createElement(
+          "div"
+        );
+
+
+      bar.id =
+        "patient-cd-bar";
+
+
+      bar.innerHTML = `
+
+        <span
+          style="
+            display:inline-block;
+            width:6px;
+            height:6px;
+            background:#C62828;
+            border-radius:50%;
+            animation:blink-p 1.4s infinite;
+          "
+        ></span>
+
+        <span>
+          LIVE
+        </span>
+
+        <span
+          style="
+            color:rgba(255,255,255,0.20);
+          "
+        >
+          ·
+        </span>
+
+        <span id="patient-cd-label">
+          Checking active requests...
+        </span>
+
+      `;
+
+
+      const style =
+        document.createElement(
+          "style"
+        );
+
+
+      style.textContent = `
+        @keyframes blink-p {
+          0%,100% {
+            opacity:1;
+          }
+
+          50% {
+            opacity:.2;
+          }
+        }
+      `;
+
+
+      document.head.appendChild(
+        style
+      );
+
+
+      document
+        .querySelector(
+          ".topbar"
+        )
+        .insertAdjacentElement(
+          "afterend",
+          bar
+        );
+
+    }
+
+
+    let patCountdown =
+      PATIENT_REFRESH_MS / 1000;
+
+
+    function startPatientCountdown() {
+
+      renderPatientCountdown();
+
+
+      setInterval(
+        () => {
+
+          patCountdown--;
+
+
+          const label =
+            document.getElementById(
+              "patient-cd-label"
+            );
+
+
+          if (label) {
+
+            const minutes =
+              Math.floor(
+                patCountdown / 60
+              );
+
+
+            const seconds =
+              patCountdown % 60;
+
+
+            label.textContent =
+              `Next check in ${minutes}:${String(seconds).padStart(2, "0")}`;
+
+          }
+
+
+          if (
+            patCountdown <= 0
+          ) {
+
+            patCountdown =
+              PATIENT_REFRESH_MS / 1000;
+
+
+            checkActiveRequest();
+
+          }
+
+        },
+        1000
+      );
+
+    }
+
+
+    /* =====================================================
+       INITIAL ACTIVE REQUEST CHECK
+    ====================================================== */
+
+    checkActiveRequest();
+
+    startPatientCountdown();
+
+
+    /* =====================================================
+       BROWSER BACK BUTTON
+    ====================================================== */
+
+    window.addEventListener(
+      "pageshow",
+      function(event) {
+
+        if (event.persisted) {
+
+          sessionStorage.setItem(
+            "just_went_back",
+            "1"
+          );
+
+        }
+
+      }
+    );
+
+  </script>
+
+</body>
+</html>
